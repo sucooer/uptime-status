@@ -75,19 +75,7 @@ npx vercel --prod
 
 ### Cloudflare Pages
 
-```bash
-npm run pages:deploy
-```
-
-控制台配置：
-
-- **Settings → Environment variables**：填写变量，注意 Production / Preview 需分别配置
-- **Settings → Functions → Compatibility flags**：添加 `nodejs_compat`
-
-Git 集成时使用：
-
-- Build command: `npx @cloudflare/next-on-pages@1`
-- Build output directory: `.vercel/output/static`
+导入仓库，Framework Preset 选 **Next.js**，配置环境变量后 Deploy。Cloudflare 会自动检测并使用 Next.js 集成，无需手动修改构建命令或输出目录。
 
 ## API
 
