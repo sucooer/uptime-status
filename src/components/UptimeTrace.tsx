@@ -1,5 +1,8 @@
+'use client';
+
 import type { DayCell, DayState } from '@/lib/types';
 import { formatTime } from '@/lib/time';
+import { useState } from 'react';
 
 const FILL: Record<DayState, string> = {
   up: 'fill-up',
@@ -38,9 +41,11 @@ interface Props {
  * - 红色：中断
  * - 灰色：无数据
  *
- * 鼠标悬停时有放大动画和详细信息提示。
+ * 鼠标悬停时方块从底部向上扩展，圆角保持不变。
  */
 export function UptimeTrace({ days, timezone, height = 48 }: Props) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   if (!days.length) return null;
 
   const W = days.length * 14;
@@ -61,27 +66,37 @@ export function UptimeTrace({ days, timezone, height = 48 }: Props) {
       {/* 每日方块 */}
       {days.map((d, i) => {
         const x = i * 14 + 2;
-        const y = 3;
+        const isHovered = hoveredIndex === i;
+        const y = isHovered ? 1 : 3;
+        const h = isHovered ? barHeight + 4 : barHeight;
 
         return (
-          <g key={d.start} className="group cursor-pointer">
-            {/* 方块：悬停时从底部向上放大 10%，圆角保持 */}
+          <g key={d.start}>
+            {/* 方块：悬停时向上扩展，圆角保持 */}
             <rect
               x={x}
               y={y}
               width={10}
-              height={barHeight}
+              height={h}
               rx={4}
-              className={`${FILL[d.state]} transition-all duration-200 ease-out group-hover:scale-y-110 group-hover:brightness-110`}
+              className={`${FILL[d.state]} transition-all duration-200 ease-out`}
               opacity={d.state === 'nodata' ? 0.3 : d.state === 'up' ? 0.9 : 1}
               style={{
-                transformBox: 'fill-box',
-                transformOrigin: 'center bottom',
+                filter: isHovered ? 'brightness(1.15)' : 'none',
               }}
             />
 
             {/* 悬停热区 + tooltip */}
-            <rect x={i * 14} y={0} width={14} height={H} fill="#000" fillOpacity={0}>
+            <rect
+              x={i * 14}
+              y={0}
+              width={14}
+              height={H}
+              fill="#000"
+              fillOpacity={0}
+              onMouseEnter={() => setHoveredIndex(i)}
+              onMouseLeave={() => setHoveredIndex(null)}
+            >
               <title>{tooltip(d, timezone)}</title>
             </rect>
           </g>
