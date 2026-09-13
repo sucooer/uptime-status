@@ -41,16 +41,16 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
 
   const W = days.length * 10;
   const H = height;
-  const baseY = H - 10;
+  const baseY = H - 12;
   /** 高度缩放：卡片里的紧凑版等比压扁 */
-  const k = Math.max(0.35, (H - 16) / 72);
+  const k = Math.max(0.4, (H - 20) / 80);
   const maxDown = Math.max(...days.map((d) => d.downSeconds), 0);
 
   const spikeHeight = (d: DayCell): number => {
-    if (d.state === 'nodata') return 2;
-    if (d.state === 'up') return 4;
+    if (d.state === 'nodata') return 6;
+    if (d.state === 'up') return 10;
     const f = maxDown > 0 ? Math.sqrt(Math.min(1, d.downSeconds / maxDown)) : 1;
-    return d.state === 'down' ? 30 + f * 40 : 14 + f * 22;
+    return d.state === 'down' ? 45 + f * 45 : 22 + f * 28;
   };
 
   const incidentCount = days.filter((d) => d.state === 'down' || d.state === 'degraded').length;
@@ -65,42 +65,93 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
       suppressHydrationWarning
       aria-label={`最近 ${days.length} 天可用性迹线，其中 ${incidentCount} 天出现过中断或波动`}
     >
+      <defs>
+        {/* 渐变定义 */}
+        <linearGradient id="gradient-up" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" className="text-up" stopColor="currentColor" stopOpacity="0.9" />
+          <stop offset="100%" className="text-up" stopColor="currentColor" stopOpacity="0.3" />
+        </linearGradient>
+        <linearGradient id="gradient-degraded" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" className="text-degraded" stopColor="currentColor" stopOpacity="1" />
+          <stop offset="100%" className="text-degraded" stopColor="currentColor" stopOpacity="0.4" />
+        </linearGradient>
+        <linearGradient id="gradient-down" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" className="text-down" stopColor="currentColor" stopOpacity="1" />
+          <stop offset="100%" className="text-down" stopColor="currentColor" stopOpacity="0.5" />
+        </linearGradient>
+      </defs>
+
       {/* 纵向刻度：每 30 天一条发丝参考线 */}
       {days.length >= 30 &&
         Array.from({ length: Math.floor((days.length - 1) / 30) }, (_, i) => (days.length - 1) * 10 - (i + 1) * 30 * 10).map(
           (x) => (
-            <rect key={`g${x}`} x={x} y={4} width={1} height={baseY - 4} className="fill-line opacity-70" />
+            <rect key={`g${x}`} x={x} y={6} width={1} height={baseY - 6} className="fill-line opacity-50" />
           ),
         )}
 
       {/* 周刻度：基线下方的小齿 */}
       {days.map((d, i) =>
         (days.length - 1 - i) % 7 === 0 ? (
-          <rect key={`t${d.start}`} x={i * 10 + 2} y={baseY + 3} width={1} height={4} className="fill-line-strong" />
+          <rect key={`t${d.start}`} x={i * 10 + 2} y={baseY + 4} width={1} height={5} className="fill-line-strong opacity-60" />
         ) : null,
       )}
 
-      {/* 基线：走纸的零位 */}
-      <rect x={0} y={baseY} width={W} height={1} className="fill-line-strong" />
+      {/* 基线：走纸的零位，加粗更明显 */}
+      <rect x={0} y={baseY} width={W} height={2} className="fill-line-strong" rx={1} />
 
       {/* 每日尖峰 */}
       {days.map((d, i) => {
         const h = spikeHeight(d) * k;
+        const x = i * 10 + 2;
+        const y = baseY - h;
+
+        // 根据状态选择填充
+        let fill: string;
+        let opacity = 1;
+        if (d.state === 'up') {
+          fill = 'url(#gradient-up)';
+          opacity = 0.7;
+        } else if (d.state === 'degraded') {
+          fill = 'url(#gradient-degraded)';
+        } else if (d.state === 'down') {
+          fill = 'url(#gradient-down)';
+        } else {
+          fill = FILL[d.state];
+          opacity = 0.4;
+        }
+
         return (
-          <rect
-            key={d.start}
-            x={i * 10 + 2}
-            y={baseY - h}
-            width={6}
-            height={Math.max(1, h)}
-            rx={0.8}
-            className={`${FILL[d.state]} ${d.state === 'up' ? 'opacity-40' : ''}`}
-          />
+          <g key={d.start}>
+            {/* 主尖峰 */}
+            <rect
+              x={x}
+              y={y}
+              width={6}
+              height={Math.max(2, h)}
+              rx={1.5}
+              fill={fill}
+              opacity={opacity}
+              className={d.state === 'nodata' ? FILL[d.state] : ''}
+            />
+            {/* 故障/波动时添加顶部高光 */}
+            {(d.state === 'down' || d.state === 'degraded') && (
+              <rect
+                x={x}
+                y={y}
+                width={6}
+                height={Math.min(8, h * 0.3)}
+                rx={1.5}
+                className={FILL[d.state]}
+                opacity={0.9}
+              />
+            )}
+          </g>
         );
       })}
 
-      {/* NOW 游标：记录笔当前所在位置 */}
-      <rect x={W - 1} y={baseY - 8} width={1} height={14} className="fill-accent" />
+      {/* NOW 游标：记录笔当前所在位置，更明显 */}
+      <rect x={W - 2} y={baseY - 12} width={2} height={20} className="fill-accent" rx={1} />
+      <circle cx={W - 1} cy={baseY - 12} r={3} className="fill-accent" opacity={0.6} />
 
       {/* 悬停热区 + 原生 tooltip */}
       {days.map((d, i) => (
