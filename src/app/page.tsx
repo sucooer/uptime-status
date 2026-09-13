@@ -121,12 +121,18 @@ export default async function Home() {
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <span className="tnum">每 {Math.round(siteConfig.refreshIntervalMs / 1000)} 秒自动刷新</span>
             <span className="opacity-40">·</span>
-            <span>Copyright © {new Date().getFullYear()} sucooer</span>
+            <span>Copyright © {copyrightYear()} sucooer</span>
           </div>
         </div>
       </footer>
     </main>
   );
+}
+
+function copyrightYear(): string {
+  const startYear = 2026;
+  const currentYear = new Date().getFullYear();
+  return currentYear > startYear ? `${startYear} - ${currentYear}` : String(startYear);
 }
 
 function SectionTitle({ title, count }: { title: string; count: number }) {
