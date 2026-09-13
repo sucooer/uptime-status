@@ -30,135 +30,72 @@ interface Props {
 }
 
 /**
- * 90 天「走纸记录仪」迹线 —— 本页的签名元素。
+ * 90 天可用性方块条 —— GitHub 贡献图风格。
  *
- * 与健康状态页常见的等高方块条不同，这条迹线只在出事的日子立起尖峰，
- * 尖峰高度按中断时长的平方根缩放：平稳 = 一条近乎平直的基线，
- * 一眼就能看出「什么时候出过事、有多严重」。
+ * 每天一个饱满的圆角矩形，颜色表示状态：
+ * - 绿色：正常
+ * - 黄色：波动
+ * - 红色：中断
+ * - 灰色：无数据
+ *
+ * 鼠标悬停时有放大动画和详细信息提示。
  */
-export function UptimeTrace({ days, timezone, height = 92 }: Props) {
+export function UptimeTrace({ days, timezone, height = 48 }: Props) {
   if (!days.length) return null;
 
   const W = days.length * 12;
   const H = height;
-  const baseY = H - 12;
-  /** 高度缩放：卡片里的紧凑版等比压扁 */
-  const k = Math.max(0.5, (H - 20) / 80);
-  const maxDown = Math.max(...days.map((d) => d.downSeconds), 0);
-
-  const spikeHeight = (d: DayCell): number => {
-    if (d.state === 'nodata') return 8;
-    if (d.state === 'up') return 16;
-    const f = maxDown > 0 ? Math.sqrt(Math.min(1, d.downSeconds / maxDown)) : 1;
-    return d.state === 'down' ? 50 + f * 50 : 28 + f * 32;
-  };
-
+  const barHeight = H - 8;
   const incidentCount = days.filter((d) => d.state === 'down' || d.state === 'degraded').length;
 
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
-      className="animate-trace block w-full"
+      className="block w-full"
       style={{ height: H }}
       role="img"
       suppressHydrationWarning
-      aria-label={`最近 ${days.length} 天可用性迹线，其中 ${incidentCount} 天出现过中断或波动`}
+      aria-label={`最近 ${days.length} 天可用性记录，其中 ${incidentCount} 天出现过中断或波动`}
     >
-      <defs>
-        {/* 渐变定义 */}
-        <linearGradient id="gradient-up" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" className="text-up" stopColor="currentColor" stopOpacity="0.9" />
-          <stop offset="100%" className="text-up" stopColor="currentColor" stopOpacity="0.3" />
-        </linearGradient>
-        <linearGradient id="gradient-degraded" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" className="text-degraded" stopColor="currentColor" stopOpacity="1" />
-          <stop offset="100%" className="text-degraded" stopColor="currentColor" stopOpacity="0.4" />
-        </linearGradient>
-        <linearGradient id="gradient-down" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" className="text-down" stopColor="currentColor" stopOpacity="1" />
-          <stop offset="100%" className="text-down" stopColor="currentColor" stopOpacity="0.5" />
-        </linearGradient>
-      </defs>
-
-      {/* 纵向刻度：每 30 天一条发丝参考线 */}
-      {days.length >= 30 &&
-        Array.from({ length: Math.floor((days.length - 1) / 30) }, (_, i) => (days.length - 1) * 12 - (i + 1) * 30 * 12).map(
-          (x) => (
-            <rect key={`g${x}`} x={x} y={6} width={1} height={baseY - 6} className="fill-line opacity-50" />
-          ),
-        )}
-
-      {/* 周刻度：基线下方的小齿 */}
-      {days.map((d, i) =>
-        (days.length - 1 - i) % 7 === 0 ? (
-          <rect key={`t${d.start}`} x={i * 12 + 2} y={baseY + 4} width={1} height={5} className="fill-line-strong opacity-60" />
-        ) : null,
-      )}
-
-      {/* 基线：走纸的零位，加粗更明显 */}
-      <rect x={0} y={baseY} width={W} height={2} className="fill-line-strong" rx={1} />
-
-      {/* 每日尖峰 */}
+      {/* 每日方块 */}
       {days.map((d, i) => {
-        const h = spikeHeight(d) * k;
         const x = i * 12 + 2;
-        const y = baseY - h;
-
-        // 根据状态选择填充
-        let fill: string;
-        let opacity = 1;
-        if (d.state === 'up') {
-          fill = 'url(#gradient-up)';
-          opacity = 0.7;
-        } else if (d.state === 'degraded') {
-          fill = 'url(#gradient-degraded)';
-        } else if (d.state === 'down') {
-          fill = 'url(#gradient-down)';
-        } else {
-          fill = FILL[d.state];
-          opacity = 0.4;
-        }
+        const y = 4;
 
         return (
-          <g key={d.start}>
-            {/* 主尖峰 */}
+          <g key={d.start} className="group">
+            {/* 方块 */}
             <rect
               x={x}
               y={y}
               width={8}
-              height={Math.max(3, h)}
+              height={barHeight}
               rx={2}
-              fill={fill}
-              opacity={opacity}
-              className={d.state === 'nodata' ? FILL[d.state] : ''}
+              className={`${FILL[d.state]} transition-all duration-200 group-hover:opacity-80`}
+              opacity={d.state === 'nodata' ? 0.3 : d.state === 'up' ? 0.85 : 1}
             />
-            {/* 故障/波动时添加顶部高光 */}
-            {(d.state === 'down' || d.state === 'degraded') && (
-              <rect
-                x={x}
-                y={y}
-                width={8}
-                height={Math.min(10, h * 0.35)}
-                rx={2}
-                className={FILL[d.state]}
-                opacity={0.9}
-              />
-            )}
+
+            {/* 悬停放大效果 */}
+            <rect
+              x={x - 1}
+              y={y - 2}
+              width={10}
+              height={barHeight + 4}
+              rx={2.5}
+              className={`${FILL[d.state]} opacity-0 transition-all duration-200 group-hover:opacity-20`}
+            />
+
+            {/* 悬停热区 + tooltip */}
+            <rect x={i * 12} y={0} width={12} height={H} fill="#000" fillOpacity={0}>
+              <title>{tooltip(d, timezone)}</title>
+            </rect>
           </g>
         );
       })}
 
-      {/* NOW 游标：记录笔当前所在位置，更明显 */}
-      <rect x={W - 2} y={baseY - 12} width={2} height={20} className="fill-accent" rx={1} />
-      <circle cx={W - 1} cy={baseY - 12} r={3} className="fill-accent" opacity={0.6} />
-
-      {/* 悬停热区 + 原生 tooltip */}
-      {days.map((d, i) => (
-        <rect key={`h${d.start}`} x={i * 12} y={0} width={12} height={H} fill="#000" fillOpacity={0}>
-          <title>{tooltip(d, timezone)}</title>
-        </rect>
-      ))}
+      {/* NOW 标记：今天的位置 */}
+      <rect x={W - 3} y={2} width={2} height={H - 4} className="fill-accent" rx={1} opacity={0.6} />
     </svg>
   );
 }

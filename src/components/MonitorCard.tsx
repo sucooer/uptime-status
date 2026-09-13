@@ -74,7 +74,7 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
             <span>最近 {historyDays} 天</span>
             <span className="tnum">{fmtRatio(monitor.uptime.all)}%</span>
           </div>
-          <UptimeTrace days={monitor.days} timezone={timezone} height={48} />
+          <UptimeTrace days={monitor.days} timezone={timezone} height={40} />
         </div>
 
         {/* 指标 */}
