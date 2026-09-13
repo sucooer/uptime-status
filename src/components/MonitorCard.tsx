@@ -31,7 +31,7 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
   const traceColor = monitor.state === 'down' ? 'var(--c-down)' : 'var(--c-accent)';
 
   return (
-    <article className="card relative overflow-hidden">
+    <article className="card hover-lift relative overflow-hidden">
       {/* 左侧状态导轨：一眼扫过整列就能看出谁出了问题 */}
       <span
         aria-hidden

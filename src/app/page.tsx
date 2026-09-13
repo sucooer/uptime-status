@@ -63,14 +63,19 @@ export default async function Home() {
         <section key={group.name} className="mt-9">
           <SectionTitle title={group.name} count={group.monitors.length} />
           <div className="grid gap-4 sm:grid-cols-2">
-            {group.monitors.map((m) => (
-              <MonitorCard
+            {group.monitors.map((m, idx) => (
+              <div
                 key={m.id}
-                monitor={m}
-                timezone={siteConfig.timezone}
-                showUrl={siteConfig.showUrl}
-                historyDays={data.historyDays}
-              />
+                className={`animate-enter ${idx < 5 ? `stagger-${idx + 1}` : ''}`}
+                style={{ opacity: 0 }}
+              >
+                <MonitorCard
+                  monitor={m}
+                  timezone={siteConfig.timezone}
+                  showUrl={siteConfig.showUrl}
+                  historyDays={data.historyDays}
+                />
+              </div>
             ))}
           </div>
         </section>

@@ -59,7 +59,7 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
     <svg
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
-      className="block w-full"
+      className="animate-trace block w-full"
       style={{ height: H }}
       role="img"
       suppressHydrationWarning
