@@ -39,18 +39,18 @@ interface Props {
 export function UptimeTrace({ days, timezone, height = 92 }: Props) {
   if (!days.length) return null;
 
-  const W = days.length * 10;
+  const W = days.length * 12;
   const H = height;
   const baseY = H - 12;
   /** 高度缩放：卡片里的紧凑版等比压扁 */
-  const k = Math.max(0.4, (H - 20) / 80);
+  const k = Math.max(0.5, (H - 20) / 80);
   const maxDown = Math.max(...days.map((d) => d.downSeconds), 0);
 
   const spikeHeight = (d: DayCell): number => {
-    if (d.state === 'nodata') return 6;
-    if (d.state === 'up') return 10;
+    if (d.state === 'nodata') return 8;
+    if (d.state === 'up') return 16;
     const f = maxDown > 0 ? Math.sqrt(Math.min(1, d.downSeconds / maxDown)) : 1;
-    return d.state === 'down' ? 45 + f * 45 : 22 + f * 28;
+    return d.state === 'down' ? 50 + f * 50 : 28 + f * 32;
   };
 
   const incidentCount = days.filter((d) => d.state === 'down' || d.state === 'degraded').length;
@@ -83,7 +83,7 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
 
       {/* 纵向刻度：每 30 天一条发丝参考线 */}
       {days.length >= 30 &&
-        Array.from({ length: Math.floor((days.length - 1) / 30) }, (_, i) => (days.length - 1) * 10 - (i + 1) * 30 * 10).map(
+        Array.from({ length: Math.floor((days.length - 1) / 30) }, (_, i) => (days.length - 1) * 12 - (i + 1) * 30 * 12).map(
           (x) => (
             <rect key={`g${x}`} x={x} y={6} width={1} height={baseY - 6} className="fill-line opacity-50" />
           ),
@@ -92,7 +92,7 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
       {/* 周刻度：基线下方的小齿 */}
       {days.map((d, i) =>
         (days.length - 1 - i) % 7 === 0 ? (
-          <rect key={`t${d.start}`} x={i * 10 + 2} y={baseY + 4} width={1} height={5} className="fill-line-strong opacity-60" />
+          <rect key={`t${d.start}`} x={i * 12 + 2} y={baseY + 4} width={1} height={5} className="fill-line-strong opacity-60" />
         ) : null,
       )}
 
@@ -102,7 +102,7 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
       {/* 每日尖峰 */}
       {days.map((d, i) => {
         const h = spikeHeight(d) * k;
-        const x = i * 10 + 2;
+        const x = i * 12 + 2;
         const y = baseY - h;
 
         // 根据状态选择填充
@@ -126,9 +126,9 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
             <rect
               x={x}
               y={y}
-              width={6}
-              height={Math.max(2, h)}
-              rx={1.5}
+              width={8}
+              height={Math.max(3, h)}
+              rx={2}
               fill={fill}
               opacity={opacity}
               className={d.state === 'nodata' ? FILL[d.state] : ''}
@@ -138,9 +138,9 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
               <rect
                 x={x}
                 y={y}
-                width={6}
-                height={Math.min(8, h * 0.3)}
-                rx={1.5}
+                width={8}
+                height={Math.min(10, h * 0.35)}
+                rx={2}
                 className={FILL[d.state]}
                 opacity={0.9}
               />
@@ -155,7 +155,7 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
 
       {/* 悬停热区 + 原生 tooltip */}
       {days.map((d, i) => (
-        <rect key={`h${d.start}`} x={i * 10} y={0} width={10} height={H} fill="#000" fillOpacity={0}>
+        <rect key={`h${d.start}`} x={i * 12} y={0} width={12} height={H} fill="#000" fillOpacity={0}>
           <title>{tooltip(d, timezone)}</title>
         </rect>
       ))}

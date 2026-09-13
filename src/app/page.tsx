@@ -62,7 +62,7 @@ export default async function Home() {
       {data.groups.map((group) => (
         <section key={group.name} className="mt-9">
           <SectionTitle title={group.name} count={group.monitors.length} />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {group.monitors.map((m) => (
               <MonitorCard
                 key={m.id}
