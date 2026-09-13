@@ -82,9 +82,8 @@ export function UptimeTrace({ days, timezone, height = 48 }: Props) {
               width={10}
               height={barHeight}
               rx={2.5}
-              className={`${FILL[d.state]} transition-all duration-200 group-hover:scale-y-105 group-hover:brightness-110`}
+              className={`${FILL[d.state]} transition-all duration-200 group-hover:brightness-125 group-hover:opacity-100`}
               opacity={d.state === 'nodata' ? 0.3 : d.state === 'up' ? 0.9 : 1}
-              style={{ transformOrigin: 'center bottom' }}
             />
 
             {/* 悬停热区 + tooltip */}

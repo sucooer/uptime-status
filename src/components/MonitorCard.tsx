@@ -32,10 +32,10 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
 
   return (
     <article className="card hover-lift relative overflow-hidden">
-      {/* 左侧状态导轨：一眼扫过整列就能看出谁出了问题 */}
+      {/* 左侧状态导轨：一眼扫过整列就能看出谁出了问题，圆角贴合卡片 */}
       <span
         aria-hidden
-        className={`absolute inset-y-0 left-0 w-[3px] ${RAIL[monitor.state]}`}
+        className={`absolute inset-y-0 left-0 w-[4px] rounded-l-lg ${RAIL[monitor.state]}`}
       />
 
       <div className="pl-5 pr-4 py-3 sm:pl-5 sm:pr-4 sm:py-3.5">
@@ -49,7 +49,20 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-down" />
                 </span>
               )}
-              <h3 className="truncate text-[15px] font-semibold leading-snug">{monitor.name}</h3>
+              <h3 className="truncate text-[15px] font-semibold leading-snug">
+                {monitor.url ? (
+                  <a
+                    href={monitor.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="transition-colors hover:text-accent"
+                  >
+                    {monitor.name}
+                  </a>
+                ) : (
+                  monitor.name
+                )}
+              </h3>
               <span className="shrink-0 rounded border border-line px-1.5 py-px font-mono text-2xs uppercase tracking-wider text-subtle">
                 {monitor.typeLabel}
               </span>
