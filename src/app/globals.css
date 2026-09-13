@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   设计令牌：仪器面板配色。浅色为偏冷的仪表灰白，深色为石墨黑。
+   状态色刻意做了降饱和处理——它们只承担语义，不承担装饰。
+   --------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --c-paper: 238 241 244;
+  --c-surface: 255 255 255;
+  --c-surface-2: 247 249 250;
+  --c-ink: 15 20 24;
+  --c-ink-2: 61 71 80;
+  --c-subtle: 95 106 118;
+  --c-line: 221 226 231;
+  --c-line-strong: 198 206 214;
+  --c-up: 13 122 85;
+  --c-degraded: 162 98 10;
+  --c-down: 192 51 43;
+  --c-accent: 11 110 143;
+
+  --grid: 15 20 24;
+  --grid-opacity: 0.055;
+  /* 卡片不用投影，用 1px 内高光 + 发丝边框做出「面板」质感 */
+  --panel-edge: inset 0 1px 0 255 255 255 / 0.9;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --c-paper: 13 17 20;
+  --c-surface: 21 26 31;
+  --c-surface-2: 27 33 39;
+  --c-ink: 229 233 236;
+  --c-ink-2: 179 188 196;
+  --c-subtle: 135 145 153;
+  --c-line: 35 42 49;
+  --c-line-strong: 47 56 64;
+  --c-up: 53 181 140;
+  --c-degraded: 215 154 60;
+  --c-down: 229 101 92;
+  --c-accent: 98 185 214;
+
+  --grid: 229 233 236;
+  --grid-opacity: 0.06;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-paper font-sans text-ink antialiased;
+  /* 极淡的仪器网格底纹，40px 一格，只在页面背景上出现 */
+  background-image:
+    linear-gradient(to right, rgb(var(--grid) / var(--grid-opacity)) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--grid) / var(--grid-opacity)) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-attachment: fixed;
+}
+
+/* 页脚/卡片内的数字与标签统一等宽 + 表格数字，对齐才有仪表感 */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+@layer components {
+  /* 面板：发丝边框 + 顶部内高光，无大投影 */
+  .card {
+    @apply rounded-lg border border-line bg-surface;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
+  }
+
+  .dark .card {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
+  }
+
+  /* 用于卡片内部再分层的浅底块 */
+  .inset {
+    @apply rounded bg-surface2;
+  }
+
+  .muted {
+    @apply text-subtle;
+  }
+
+  .divider {
+    @apply border-line;
+  }
+
+  /* 小标签：等宽 + 大写 + 宽字距，仪表面板的丝印文字 */
+  .eyebrow {
+    @apply font-mono text-2xs uppercase tracking-label text-subtle;
+  }
+
+  .rule {
+    @apply h-px w-full bg-line;
+  }
+
+  /* 交互控件统一的方角描边风格 */
+  .ctl {
+    @apply inline-flex items-center justify-center rounded border border-line bg-surface text-ink2
+      transition-colors hover:bg-surface2 hover:text-ink;
+  }
+}
+
+/* 焦点环：2px 强调色 + 2px 偏移，键盘可见 */
+:where(a, button, summary, [tabindex]):focus-visible {
+  outline: 2px solid rgb(var(--c-accent));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: rgb(var(--c-accent) / 0.22);
+}
+
+/* 尊重系统的「减少动态效果」设置 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
