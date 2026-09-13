@@ -118,7 +118,11 @@ export default async function Home() {
               </span>
             </a>
           </div>
-          <span className="tnum">每 {Math.round(siteConfig.refreshIntervalMs / 1000)} 秒自动刷新</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <span className="tnum">每 {Math.round(siteConfig.refreshIntervalMs / 1000)} 秒自动刷新</span>
+            <span className="opacity-40">·</span>
+            <span>Copyright © {new Date().getFullYear()} sucooer</span>
+          </div>
         </div>
       </footer>
     </main>
