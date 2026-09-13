@@ -65,25 +65,19 @@ export function UptimeTrace({ days, timezone, height = 48 }: Props) {
 
         return (
           <g key={d.start} className="group cursor-pointer">
-            {/* 悬停放大背景 */}
-            <rect
-              x={x - 1}
-              y={y - 1}
-              width={12}
-              height={barHeight + 2}
-              rx={3}
-              className={`${FILL[d.state]} opacity-0 transition-all duration-200 group-hover:opacity-30`}
-            />
-
-            {/* 方块 */}
+            {/* 方块：悬停时从底部向上放大 10%，圆角保持 */}
             <rect
               x={x}
               y={y}
               width={10}
               height={barHeight}
-              rx={2.5}
-              className={`${FILL[d.state]} transition-all duration-200 group-hover:brightness-125 group-hover:opacity-100`}
+              rx={4}
+              className={`${FILL[d.state]} transition-all duration-200 ease-out group-hover:scale-y-110 group-hover:brightness-110`}
               opacity={d.state === 'nodata' ? 0.3 : d.state === 'up' ? 0.9 : 1}
+              style={{
+                transformBox: 'fill-box',
+                transformOrigin: 'center bottom',
+              }}
             />
 
             {/* 悬停热区 + tooltip */}
