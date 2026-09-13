@@ -67,7 +67,6 @@ export default async function Home() {
               <div
                 key={m.id}
                 className={`animate-enter ${idx < 5 ? `stagger-${idx + 1}` : ''}`}
-                style={{ opacity: 0 }}
               >
                 <MonitorCard
                   monitor={m}

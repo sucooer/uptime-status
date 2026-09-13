@@ -43,9 +43,9 @@ interface Props {
 export function UptimeTrace({ days, timezone, height = 48 }: Props) {
   if (!days.length) return null;
 
-  const W = days.length * 12;
+  const W = days.length * 14;
   const H = height;
-  const barHeight = H - 8;
+  const barHeight = H - 6;
   const incidentCount = days.filter((d) => d.state === 'down' || d.state === 'degraded').length;
 
   return (
@@ -60,34 +60,35 @@ export function UptimeTrace({ days, timezone, height = 48 }: Props) {
     >
       {/* 每日方块 */}
       {days.map((d, i) => {
-        const x = i * 12 + 2;
-        const y = 4;
+        const x = i * 14 + 2;
+        const y = 3;
 
         return (
-          <g key={d.start} className="group">
+          <g key={d.start} className="group cursor-pointer">
+            {/* 悬停放大背景 */}
+            <rect
+              x={x - 1}
+              y={y - 1}
+              width={12}
+              height={barHeight + 2}
+              rx={3}
+              className={`${FILL[d.state]} opacity-0 transition-all duration-200 group-hover:opacity-30`}
+            />
+
             {/* 方块 */}
             <rect
               x={x}
               y={y}
-              width={8}
-              height={barHeight}
-              rx={2}
-              className={`${FILL[d.state]} transition-all duration-200 group-hover:opacity-80`}
-              opacity={d.state === 'nodata' ? 0.3 : d.state === 'up' ? 0.85 : 1}
-            />
-
-            {/* 悬停放大效果 */}
-            <rect
-              x={x - 1}
-              y={y - 2}
               width={10}
-              height={barHeight + 4}
+              height={barHeight}
               rx={2.5}
-              className={`${FILL[d.state]} opacity-0 transition-all duration-200 group-hover:opacity-20`}
+              className={`${FILL[d.state]} transition-all duration-200 group-hover:scale-y-105 group-hover:brightness-110`}
+              opacity={d.state === 'nodata' ? 0.3 : d.state === 'up' ? 0.9 : 1}
+              style={{ transformOrigin: 'center bottom' }}
             />
 
             {/* 悬停热区 + tooltip */}
-            <rect x={i * 12} y={0} width={12} height={H} fill="#000" fillOpacity={0}>
+            <rect x={i * 14} y={0} width={14} height={H} fill="#000" fillOpacity={0}>
               <title>{tooltip(d, timezone)}</title>
             </rect>
           </g>
