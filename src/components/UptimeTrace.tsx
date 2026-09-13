@@ -62,6 +62,7 @@ export function UptimeTrace({ days, timezone, height = 92 }: Props) {
       className="block w-full"
       style={{ height: H }}
       role="img"
+      suppressHydrationWarning
       aria-label={`最近 ${days.length} 天可用性迹线，其中 ${incidentCount} 天出现过中断或波动`}
     >
       {/* 纵向刻度：每 30 天一条发丝参考线 */}

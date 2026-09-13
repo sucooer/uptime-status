@@ -60,6 +60,7 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
         disabled={pending}
         aria-label="立即刷新"
         title="立即刷新"
+        suppressHydrationWarning
         className="ctl h-9 gap-1.5 px-2.5 font-mono text-2xs uppercase tracking-wider disabled:opacity-50"
       >
         <svg

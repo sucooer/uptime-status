@@ -38,7 +38,7 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
         className={`absolute inset-y-0 left-0 w-[3px] ${RAIL[monitor.state]}`}
       />
 
-      <div className="pl-5 pr-4 py-4 sm:pl-6 sm:pr-5 sm:py-5">
+      <div className="pl-5 pr-4 py-3 sm:pl-5 sm:pr-4 sm:py-3.5">
         {/* 标题行 */}
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div className="min-w-0">
@@ -69,49 +69,47 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
         </div>
 
         {/* 迹线 */}
-        <div className="mt-4">
-          <div className="mb-1.5 flex items-center justify-between font-mono text-2xs uppercase tracking-wider text-subtle">
+        <div className="mt-3">
+          <div className="mb-1 flex items-center justify-between font-mono text-2xs uppercase tracking-wider text-subtle">
             <span>最近 {historyDays} 天</span>
-            <span className="tnum">{fmtRatio(monitor.uptime.all)}% 总可用率</span>
+            <span className="tnum">{fmtRatio(monitor.uptime.all)}%</span>
           </div>
-          <UptimeTrace days={monitor.days} timezone={timezone} height={54} />
+          <UptimeTrace days={monitor.days} timezone={timezone} height={36} />
         </div>
 
         {/* 指标 */}
-        <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded border border-line bg-line sm:grid-cols-4">
-          <Metric label="24 小时" value={fmtRatio(monitor.uptime.d1)} unit="%" />
-          <Metric label="7 天" value={fmtRatio(monitor.uptime.d7)} unit="%" />
-          <Metric label="30 天" value={fmtRatio(monitor.uptime.d30)} unit="%" />
+        <div className="mt-3 grid grid-cols-4 gap-px overflow-hidden rounded border border-line bg-line">
+          <Metric label="24h" value={fmtRatio(monitor.uptime.d1)} unit="%" />
+          <Metric label="7d" value={fmtRatio(monitor.uptime.d7)} unit="%" />
+          <Metric label="30d" value={fmtRatio(monitor.uptime.d30)} unit="%" />
           <Metric
-            label="平均响应"
+            label="响应"
             value={monitor.avgResponseMs !== null ? String(Math.round(monitor.avgResponseMs)) : '-'}
             unit="ms"
           />
         </div>
 
         {/* 响应时间 */}
-        <div className="mt-4">
+        <div className="mt-3">
           <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 font-mono text-2xs uppercase tracking-wider text-subtle">
             <span>响应时间</span>
             <span className="tnum">
-              {monitor.lastResponseMs !== null ? `最近 ${Math.round(monitor.lastResponseMs)} ms` : '—'}
-              <span className="mx-1.5 opacity-40">/</span>
-              每 {Math.round(monitor.interval / 60)} 分钟检测
+              {monitor.lastResponseMs !== null ? `${Math.round(monitor.lastResponseMs)}ms` : '—'}
             </span>
           </div>
-          <Sparkline values={monitor.responseSeries.map((p) => p.v)} color={traceColor} height={44} />
+          <Sparkline values={monitor.responseSeries.map((p) => p.v)} color={traceColor} height={32} />
         </div>
 
         {/* 事件记录 */}
         {monitor.incidents.length > 0 && (
-          <details className="group mt-4 border-t divider pt-3">
+          <details className="group mt-3 border-t divider pt-2.5">
             <summary className="cursor-pointer list-none font-mono text-2xs uppercase tracking-wider text-accent hover:underline">
               <span className="group-open:hidden">
-                展开最近 {Math.min(monitor.incidents.length, 5)} 次事件
+                展开 {Math.min(monitor.incidents.length, 5)} 次事件
               </span>
-              <span className="hidden group-open:inline">收起事件</span>
+              <span className="hidden group-open:inline">收起</span>
             </summary>
-            <ul className="mt-3 space-y-3">
+            <ul className="mt-2.5 space-y-2.5">
               {monitor.incidents.slice(0, 5).map((inc) => {
                 const active = !inc.end;
                 return (
@@ -148,9 +146,9 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
 
 function Metric({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div className="bg-surface px-3 py-2">
+    <div className="bg-surface px-2 py-1.5">
       <div className="font-mono text-2xs uppercase tracking-wider text-subtle">{label}</div>
-      <div className="mt-0.5 font-mono text-sm font-semibold leading-none tnum">
+      <div className="mt-0.5 font-mono text-xs font-semibold leading-none tnum">
         {value}
         <span className="ml-0.5 text-2xs font-normal text-subtle">{unit}</span>
       </div>

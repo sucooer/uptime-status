@@ -44,6 +44,7 @@ export function Sparkline({ values, color = 'var(--c-accent)', height = 40, clas
       className={className}
       style={{ width: '100%', height: H }}
       role="img"
+      suppressHydrationWarning
       aria-label={`响应时间趋势，最近 ${data.length} 个采样点，峰值 ${Math.round(max)} 毫秒，谷值 ${Math.round(min)} 毫秒`}
     >
       {/* 参考网格 */}

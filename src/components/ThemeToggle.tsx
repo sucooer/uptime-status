@@ -28,6 +28,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label="切换深浅主题"
       title="切换深浅主题"
+      suppressHydrationWarning
       className="ctl h-9 w-9"
     >
       {mounted && dark ? (
