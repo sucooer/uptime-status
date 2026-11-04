@@ -3,49 +3,57 @@
 @tailwind utilities;
 
 /* ---------------------------------------------------------------------------
-   设计令牌：仪器面板配色。浅色为偏冷的仪表灰白，深色为石墨黑。
-   状态色刻意做了降饱和处理——它们只承担语义，不承担装饰。
+   设计令牌 —— 赛博网络指挥终端。
+   深色为基底：近黑底 + 离子青信号 + 冷白数据。
+   浅色是「白昼仪表」变体：淡青白纸面 + 深青墨色，几何与字体完全一致。
+   霓虹只给信号（状态点、数据迹线、命令按钮），正文始终清晰。
    --------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
 
-  --c-paper: 238 241 244;
-  --c-surface: 255 255 255;
-  --c-surface-2: 247 249 250;
-  --c-ink: 15 20 24;
-  --c-ink-2: 61 71 80;
-  --c-subtle: 95 106 118;
-  --c-line: 221 226 231;
-  --c-line-strong: 198 206 214;
-  --c-up: 13 122 85;
-  --c-degraded: 162 98 10;
-  --c-down: 192 51 43;
-  --c-accent: 11 110 143;
+  --c-paper: 234 243 243;
+  --c-surface: 250 254 254;
+  --c-surface-2: 239 247 247;
+  --c-ink: 6 32 33;
+  --c-ink-2: 45 82 80;
+  --c-subtle: 88 122 120;
+  --c-line: 190 213 211;
+  --c-line-strong: 151 184 181;
+  --c-up: 15 122 84;
+  --c-degraded: 146 88 8;
+  --c-down: 178 40 40;
+  --c-accent: 11 110 122;
+  --c-signal: 13 128 128;
 
-  --grid: 15 20 24;
-  --grid-opacity: 0.055;
-  /* 卡片不用投影，用 1px 内高光 + 发丝边框做出「面板」质感 */
-  --panel-edge: inset 0 1px 0 255 255 255 / 0.9;
+  --grid: 11 110 122;
+  --grid-opacity: 0.08;
+
+  /* 切角尺寸：HUD 面板的标志性几何 */
+  --corner: 12px;
+  --glow: 0.04;
 }
 
 .dark {
   color-scheme: dark;
 
-  --c-paper: 13 17 20;
-  --c-surface: 21 26 31;
-  --c-surface-2: 27 33 39;
-  --c-ink: 229 233 236;
-  --c-ink-2: 179 188 196;
-  --c-subtle: 135 145 153;
-  --c-line: 35 42 49;
-  --c-line-strong: 47 56 64;
-  --c-up: 53 181 140;
-  --c-degraded: 215 154 60;
-  --c-down: 229 101 92;
-  --c-accent: 98 185 214;
+  --c-paper: 3 11 15;
+  --c-surface: 9 33 36;
+  --c-surface-2: 6 24 25;
+  --c-ink: 220 246 245;
+  --c-ink-2: 178 212 193;
+  --c-subtle: 135 175 181;
+  --c-line: 30 69 73;
+  --c-line-strong: 40 96 91;
+  --c-up: 134 239 172;
+  --c-degraded: 253 224 71;
+  --c-down: 254 202 202;
+  --c-accent: 149 248 226;
+  --c-signal: 70 243 231;
 
-  --grid: 229 233 236;
-  --grid-opacity: 0.06;
+  --grid: 33 82 88;
+  --grid-opacity: 0.07;
+
+  --glow: 0.05;
 }
 
 html {
@@ -54,7 +62,7 @@ html {
 
 body {
   @apply bg-paper font-sans text-ink antialiased;
-  /* 极淡的仪器网格底纹，40px 一格，只在页面背景上出现 */
+  /* 40px 一格的仪表网格，固定不动 */
   background-image:
     linear-gradient(to right, rgb(var(--grid) / var(--grid-opacity)) 1px, transparent 1px),
     linear-gradient(to bottom, rgb(var(--grid) / var(--grid-opacity)) 1px, transparent 1px);
@@ -62,26 +70,67 @@ body {
   background-attachment: fixed;
 }
 
-/* 页脚/卡片内的数字与标签统一等宽 + 表格数字，对齐才有仪表感 */
+/* 数字与标签统一等宽 + 表格数字，纵向才能对齐 */
 .tnum {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
 
 @layer components {
-  /* 面板：发丝边框 + 顶部内高光，无大投影 */
+  /* 面板：切角几何 + 发丝边框 + 极淡内辉光。不用投影，靠几何与边框分层 */
   .card {
-    @apply rounded-lg border border-line bg-surface;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
+    @apply relative border border-line bg-surface;
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--corner)) 0,
+      100% var(--corner),
+      100% 100%,
+      var(--corner) 100%,
+      0 calc(100% - var(--corner))
+    );
+    box-shadow: inset 0 0 45px rgb(var(--c-signal) / var(--glow));
   }
 
-  .dark .card {
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
+  /* HUD 主框：切角更深，两个直角处加角标，强调仪表外框 */
+  .hud-frame {
+    @apply relative border border-line-strong bg-surface;
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--corner)) 0,
+      100% var(--corner),
+      100% 100%,
+      var(--corner) 100%,
+      0 calc(100% - var(--corner))
+    );
+    box-shadow: inset 0 0 45px rgb(var(--c-signal) / var(--glow));
   }
 
-  /* 用于卡片内部再分层的浅底块 */
+  .hud-frame::before,
+  .hud-frame::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    pointer-events: none;
+  }
+
+  .hud-frame::before {
+    top: 0;
+    left: 0;
+    border-top: 2px solid rgb(var(--c-accent));
+    border-left: 2px solid rgb(var(--c-accent));
+  }
+
+  .hud-frame::after {
+    right: 0;
+    bottom: 0;
+    border-right: 2px solid rgb(var(--c-accent));
+    border-bottom: 2px solid rgb(var(--c-accent));
+  }
+
+  /* 卡片内部再分层用的浅底块 */
   .inset {
-    @apply rounded bg-surface2;
+    @apply border border-line bg-surface2;
   }
 
   .muted {
@@ -92,7 +141,7 @@ body {
     @apply border-line;
   }
 
-  /* 小标签：等宽 + 大写 + 宽字距，仪表面板的丝印文字 */
+  /* 丝印文字：等宽、大写、宽字距的仪表标签 */
   .eyebrow {
     @apply font-mono text-2xs uppercase tracking-label text-subtle;
   }
@@ -101,10 +150,15 @@ body {
     @apply h-px w-full bg-line;
   }
 
-  /* 交互控件统一的方角描边风格 */
+  /* 控件统一方角描边，无圆角 */
   .ctl {
-    @apply inline-flex items-center justify-center rounded border border-line bg-surface text-ink2
-      transition-colors hover:bg-surface2 hover:text-ink;
+    @apply inline-flex items-center justify-center border border-line bg-surface2 text-ink2
+      transition-colors hover:border-line-strong hover:text-ink;
+  }
+
+  /* 角形小标签 */
+  .chip {
+    @apply inline-flex items-center gap-1 border px-1.5 py-px font-mono text-2xs uppercase tracking-wider;
   }
 }
 
@@ -112,7 +166,6 @@ body {
 :where(a, button, summary, [tabindex]):focus-visible {
   outline: 2px solid rgb(var(--c-accent));
   outline-offset: 2px;
-  border-radius: 2px;
 }
 
 ::selection {
@@ -135,7 +188,30 @@ body {
   }
 }
 
-/* 迹线绘制：从左到右 */
+/* 脉冲环：故障状态提示 */
+@keyframes pulseRing {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* 呼吸灯：等待 / 连接中 */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* 刻度滚动：迹线绘制用 */
 @keyframes drawTrace {
   from {
     clip-path: inset(0 100% 0 0);
@@ -145,91 +221,54 @@ body {
   }
 }
 
-/* 脉冲环：故障状态提示 */
-@keyframes pulseRing {
+/* 扫描：取数进行时，命令条上的诊断扫掠 */
+@keyframes scanSweep {
   0% {
-    transform: scale(1);
-    opacity: 1;
+    transform: translateX(-110%);
   }
   100% {
-    transform: scale(2.5);
-    opacity: 0;
-  }
-}
-
-/* 呼吸灯：等待状态 */
-@keyframes breathe {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* 数字滚动：指标变化时 */
-@keyframes countUp {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: translateX(110%);
   }
 }
 
 @layer utilities {
-  /* 进入动画 */
   .animate-enter {
     opacity: 0;
     animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  /* 交错延迟 */
-  .stagger-1 { animation-delay: 0.05s; }
-  .stagger-2 { animation-delay: 0.1s; }
-  .stagger-3 { animation-delay: 0.15s; }
-  .stagger-4 { animation-delay: 0.2s; }
-  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-1 {
+    animation-delay: 0.05s;
+  }
+  .stagger-2 {
+    animation-delay: 0.1s;
+  }
+  .stagger-3 {
+    animation-delay: 0.15s;
+  }
+  .stagger-4 {
+    animation-delay: 0.2s;
+  }
+  .stagger-5 {
+    animation-delay: 0.25s;
+  }
 
-  /* 迹线绘制 */
   .animate-trace {
     animation: drawTrace 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  /* 脉冲环 */
   .animate-pulseRing {
-    animation: pulseRing 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: pulseRing 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* 呼吸 */
   .animate-breathe {
     animation: breathe 2s ease-in-out infinite;
   }
 
-  /* 数字滚动 */
-  .animate-count {
-    animation: countUp 0.3s ease-out forwards;
+  .animate-scan {
+    animation: scanSweep 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* 悬停提升 */
-  .hover-lift {
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-  }
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.7),
-      0 4px 12px rgb(0 0 0 / 0.08);
-  }
-  .dark .hover-lift:hover {
-    box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.03),
-      0 4px 12px rgb(0 0 0 / 0.3);
-  }
-
-  /* 平滑过渡 */
   .transition-smooth {
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }

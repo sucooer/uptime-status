@@ -25,8 +25,8 @@ export function ReasonLine({ incident, active = false, className = '' }: Props) 
     <div className={`flex items-start gap-1.5 text-xs leading-relaxed ${className}`}>
       {showCode && (
         <span
-          className={`shrink-0 rounded border px-1.5 py-px font-mono text-2xs font-medium uppercase tnum ${
-            active ? 'border-down/35 text-down' : 'border-line-strong text-ink2'
+          className={`chip shrink-0 tnum ${
+            active ? 'border-down/50 text-down' : 'border-line-strong text-ink2'
           }`}
         >
           {reasonCode}

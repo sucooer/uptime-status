@@ -25,23 +25,41 @@ const LABEL: Record<DayState, string> = {
   nodata: '无数据',
 };
 
+/**
+ * 每日方块的静默不透明度：常态压低，让异常自己跳出来。
+ * 顶端再叠一条高光刻度，读起来是仪表刻度条而不是色块墙。
+ */
+const BAR_OPACITY: Record<DayState, number> = {
+  up: 0.3,
+  degraded: 0.9,
+  down: 0.9,
+  nodata: 0.14,
+};
+
+const CAP_OPACITY: Record<DayState, number> = {
+  up: 0.6,
+  degraded: 1,
+  down: 1,
+  nodata: 0.14,
+};
+
 interface Props {
   days: DayCell[];
   timezone: string;
-  /** 图形高度（px），卡片里用 54，总览用 92 */
+  /** 图形高度（px），卡片里用 48，总览用 96 */
   height?: number;
 }
 
 /**
- * 90 天可用性方块条 —— GitHub 贡献图风格。
+ * 90 天可用性方块条 —— 角形刻度条。
  *
- * 每天一个饱满的圆角矩形，颜色表示状态：
+ * 每天一根方角刻度，颜色表示状态：
  * - 绿色：正常
  * - 黄色：波动
  * - 红色：中断
  * - 灰色：无数据
  *
- * 鼠标悬停时方块从底部向上扩展，圆角保持不变。
+ * 鼠标悬停时刻度向上生长（方角不变），并给出当日详情。
  */
 export function UptimeTrace({ days, timezone, height = 48 }: Props) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -63,7 +81,6 @@ export function UptimeTrace({ days, timezone, height = 48 }: Props) {
       suppressHydrationWarning
       aria-label={`最近 ${days.length} 天可用性记录，其中 ${incidentCount} 天出现过中断或波动`}
     >
-      {/* 每日方块 */}
       {days.map((d, i) => {
         const x = i * 14 + 2;
         const isHovered = hoveredIndex === i;
@@ -72,18 +89,24 @@ export function UptimeTrace({ days, timezone, height = 48 }: Props) {
 
         return (
           <g key={d.start}>
-            {/* 方块：悬停时向上扩展，圆角保持 */}
+            {/* 刻度主体 */}
             <rect
               x={x}
               y={y}
               width={10}
               height={h}
-              rx={4}
+              rx={1}
               className={`${FILL[d.state]} transition-all duration-200 ease-out`}
-              opacity={d.state === 'nodata' ? 0.3 : d.state === 'up' ? 0.9 : 1}
-              style={{
-                filter: isHovered ? 'brightness(1.15)' : 'none',
-              }}
+              opacity={isHovered ? 1 : BAR_OPACITY[d.state]}
+            />
+            {/* 顶端高光刻度 */}
+            <rect
+              x={x}
+              y={y}
+              width={10}
+              height={2}
+              className={FILL[d.state]}
+              opacity={isHovered ? 1 : CAP_OPACITY[d.state]}
             />
 
             {/* 悬停热区 + tooltip */}
@@ -104,7 +127,7 @@ export function UptimeTrace({ days, timezone, height = 48 }: Props) {
       })}
 
       {/* NOW 标记：今天的位置 */}
-      <rect x={W - 3} y={2} width={2} height={H - 4} className="fill-accent" rx={1} opacity={0.6} />
+      <rect x={W - 3} y={1} width={1.5} height={H - 2} className="fill-accent" opacity={0.75} />
     </svg>
   );
 }
@@ -113,8 +136,11 @@ export function UptimeLegend() {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       {(Object.keys(LABEL) as DayState[]).map((k) => (
-        <span key={k} className="inline-flex items-center gap-1.5 font-mono text-2xs uppercase tracking-wider text-subtle">
-          <i className={`h-2 w-2 rounded-sm ${SWATCH[k]} opacity-80`} />
+        <span
+          key={k}
+          className="inline-flex items-center gap-1.5 font-mono text-2xs uppercase tracking-wider text-subtle"
+        >
+          <i className={`h-2.5 w-2 ${SWATCH[k]}`} style={{ opacity: BAR_OPACITY[k] }} />
           {LABEL[k]}
         </span>
       ))}

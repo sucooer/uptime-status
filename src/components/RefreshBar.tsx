@@ -46,14 +46,22 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
     Math.round(intervalMs / 1000) - Math.round(((Date.now() - updatedAt) % intervalMs) / 1000),
   );
 
+  const dot = pending ? 'var(--c-degraded)' : 'var(--c-signal)';
+
   return (
     <div className="flex items-center gap-2.5">
       <span
         suppressHydrationWarning
-        className="hidden font-mono text-2xs uppercase tracking-wider text-subtle sm:inline tnum"
+        className="hidden items-center gap-1.5 font-mono text-2xs uppercase tracking-wider text-subtle sm:inline-flex tnum"
       >
+        <span
+          aria-hidden
+          className="h-1.5 w-1.5 shrink-0 animate-breathe rounded-full"
+          style={{ background: `rgb(${dot})`, boxShadow: `0 0 8px rgb(${dot} / 0.6)` }}
+        />
         {mounted ? `更新于 ${age} · ${secondsToNext}s 后刷新` : '加载中…'}
       </span>
+
       <button
         type="button"
         onClick={() => startTransition(() => router.refresh())}
@@ -61,8 +69,15 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
         aria-label="立即刷新"
         title="立即刷新"
         suppressHydrationWarning
-        className="ctl h-9 gap-1.5 px-2.5 font-mono text-2xs uppercase tracking-wider disabled:opacity-50"
+        className="ctl relative h-8 gap-1.5 overflow-hidden px-2.5 font-mono text-2xs uppercase tracking-wider disabled:opacity-60"
       >
+        {/* 取数进行时的扫掠，给「正在诊断」一个可见的执行反馈 */}
+        {pending && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 w-full animate-scan bg-gradient-to-r from-transparent via-accent/25 to-transparent"
+          />
+        )}
         <svg
           width="12"
           height="12"
