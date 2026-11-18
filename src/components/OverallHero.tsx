@@ -93,7 +93,7 @@ export function OverallHero({ overall, stats, days, historyDays, timezone }: Pro
 
             {days.length > 0 ? (
               <>
-                <UptimeTrace days={days} timezone={timezone} height={96} />
+                <UptimeTrace days={days} timezone={timezone} height={96} inspectable />
                 <div className="mt-2 flex items-center justify-between font-mono text-2xs uppercase tracking-wider text-subtle">
                   <span>{historyDays} 天前</span>
                   <span>今天</span>
@@ -106,7 +106,7 @@ export function OverallHero({ overall, stats, days, historyDays, timezone }: Pro
             )}
 
             <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t divider pt-2.5 font-mono text-2xs uppercase tracking-wider">
-              <span className="text-subtle">悬停方块查看当日中断时长</span>
+              <span className="text-subtle">悬停或聚焦迹线查看当日详情，方向键逐日移动</span>
               <span className="text-accent/80">{timezone}</span>
             </div>
           </section>
