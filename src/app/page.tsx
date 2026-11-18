@@ -7,6 +7,7 @@ import { IncidentList } from '@/components/IncidentList';
 import { RefreshBar } from '@/components/RefreshBar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SiteLogo } from '@/components/SiteLogo';
+import { AlertBanner } from '@/components/AlertBanner';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -17,6 +18,7 @@ const linkClass =
 export default async function Home() {
   const data = await getStatus();
   const globalDays = mergeDays(data.groups, data.historyDays);
+  const downNames = data.groups.flatMap((g) => g.monitors).filter((m) => m.state === 'down').map((m) => m.name);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6">
@@ -46,6 +48,8 @@ export default async function Home() {
 
       {data.error && <Notice tone="down" label="数据获取异常" body={<>{data.error}{data.groups.length > 0 && <span className="ml-1 text-subtle">（当前显示上一次成功的缓存）</span>}</>} />}
 
+      {data.overall === 'down' && downNames.length > 0 && <AlertBanner downNames={downNames} />}
+
       {data.groups.length > 0 ? (
         <OverallHero
           overall={data.overall}
@@ -64,26 +68,28 @@ export default async function Home() {
       )}
 
       {/* 监控项分组 */}
-      {data.groups.map((group) => (
-        <section key={group.name} className="mt-10">
-          <SectionTitle title={group.name} count={group.monitors.length} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            {group.monitors.map((m, idx) => (
-              <div
-                key={m.id}
-                className={`animate-enter ${idx < 5 ? `stagger-${idx + 1}` : ''}`}
-              >
-                <MonitorCard
-                  monitor={m}
-                  timezone={siteConfig.timezone}
-                  showUrl={siteConfig.showUrl}
-                  historyDays={data.historyDays}
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+      <div id="monitor-groups">
+        {data.groups.map((group) => (
+          <section key={group.name} className="mt-10">
+            <SectionTitle title={group.name} count={group.monitors.length} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              {group.monitors.map((m, idx) => (
+                <div
+                  key={m.id}
+                  className={`animate-enter ${idx < 5 ? `stagger-${idx + 1}` : ''}`}
+                >
+                  <MonitorCard
+                    monitor={m}
+                    timezone={siteConfig.timezone}
+                    showUrl={siteConfig.showUrl}
+                    historyDays={data.historyDays}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
 
       {/* 近期事件 */}
       <section className="mt-10">
