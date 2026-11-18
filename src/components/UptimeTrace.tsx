@@ -84,28 +84,39 @@ export function UptimeTrace({ days, timezone, height = 48 }: Props) {
       {days.map((d, i) => {
         const x = i * 14 + 2;
         const isHovered = hoveredIndex === i;
-        const y = isHovered ? 1 : 3;
-        const h = isHovered ? barHeight + 4 : barHeight;
+        const entranceDelay = Math.min(i, 30) * 0.02;
 
         return (
-          <g key={d.start}>
+          <g
+            key={d.start}
+            className="animate-traceTick"
+            style={{ animationDelay: `${entranceDelay}s` }}
+          >
             {/* 刻度主体 */}
             <rect
               x={x}
-              y={y}
+              y={3}
               width={10}
-              height={h}
+              height={barHeight}
               rx={1}
-              className={`${FILL[d.state]} transition-all duration-200 ease-out`}
+              className={`${FILL[d.state]} transition-transform duration-200 ease-out`}
+              style={{
+                transform: isHovered ? `scaleY(${(barHeight + 4) / barHeight})` : 'none',
+                transformOrigin: '50% 100%',
+                transformBox: 'fill-box',
+              }}
               opacity={isHovered ? 1 : BAR_OPACITY[d.state]}
             />
             {/* 顶端高光刻度 */}
             <rect
               x={x}
-              y={y}
+              y={3}
               width={10}
               height={2}
-              className={FILL[d.state]}
+              className={`${FILL[d.state]} transition-transform duration-200 ease-out`}
+              style={{
+                transform: isHovered ? 'translateY(-4px)' : 'none',
+              }}
               opacity={isHovered ? 1 : CAP_OPACITY[d.state]}
             />
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { HudButton } from './HudButton';
 
 interface Props {
   updatedAt: number;
@@ -22,6 +23,8 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
   const [pending, startTransition] = useTransition();
   const [tick, setTick] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [justDone, setJustDone] = useState(false);
+  const prevPendingRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -40,13 +43,25 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
     return () => clearInterval(id);
   }, [intervalMs, router]);
 
+  // 完成态：pending 由 true 变 false 后短暂显示「已刷新」
+  useEffect(() => {
+    if (pending) {
+      setJustDone(false);
+    } else if (prevPendingRef.current) {
+      setJustDone(true);
+      const id = setTimeout(() => setJustDone(false), 900);
+      prevPendingRef.current = pending;
+      return () => clearTimeout(id);
+    }
+
+    prevPendingRef.current = pending;
+  }, [pending]);
+
   const age = mounted ? relative(updatedAt) : '';
   const secondsToNext = Math.max(
     0,
     Math.round(intervalMs / 1000) - Math.round(((Date.now() - updatedAt) % intervalMs) / 1000),
   );
-
-  const dot = pending ? 'var(--c-degraded)' : 'var(--c-signal)';
 
   return (
     <div className="flex items-center gap-2.5">
@@ -56,20 +71,19 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
       >
         <span
           aria-hidden
-          className="h-1.5 w-1.5 shrink-0 animate-breathe rounded-full"
-          style={{ background: `rgb(${dot})`, boxShadow: `0 0 8px rgb(${dot} / 0.6)` }}
+          className={`h-1.5 w-1.5 shrink-0 animate-breathe rounded-full shadow-[0_0_8px_var(--tw-shadow-color)] ${pending ? 'bg-degraded shadow-degraded/60' : 'bg-signal shadow-signal/60'}`}
         />
         {mounted ? `更新于 ${age} · ${secondsToNext}s 后刷新` : '加载中…'}
       </span>
 
-      <button
-        type="button"
+      <HudButton
         onClick={() => startTransition(() => router.refresh())}
         disabled={pending}
         aria-label="立即刷新"
         title="立即刷新"
         suppressHydrationWarning
-        className="ctl relative h-8 gap-1.5 overflow-hidden px-2.5 font-mono text-2xs uppercase tracking-wider disabled:opacity-60"
+        data-pending={pending}
+        className="relative h-11 gap-1.5 overflow-hidden px-2.5 font-mono text-2xs uppercase tracking-wider disabled:opacity-60"
       >
         {/* 取数进行时的扫掠，给「正在诊断」一个可见的执行反馈 */}
         {pending && (
@@ -78,21 +92,42 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
             className="pointer-events-none absolute inset-y-0 w-full animate-scan bg-gradient-to-r from-transparent via-accent/25 to-transparent"
           />
         )}
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          className={pending ? 'animate-spin' : ''}
+        {justDone ? (
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            className="text-signal"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        ) : (
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            className="refresh-icon"
+          >
+            <path d="M21 12a9 9 0 1 1-2.6-6.4" />
+            <path d="M21 3v6h-6" />
+          </svg>
+        )}
+        <span
+          aria-live="polite"
+          aria-atomic="true"
+          className={justDone ? 'text-signal' : undefined}
         >
-          <path d="M21 12a9 9 0 1 1-2.6-6.4" />
-          <path d="M21 3v6h-6" />
-        </svg>
-        {pending ? '刷新中' : '刷新'}
-      </button>
+          {justDone ? '已刷新' : pending ? '刷新中' : '刷新'}
+        </span>
+      </HudButton>
       <span hidden>{tick}</span>
     </div>
   );

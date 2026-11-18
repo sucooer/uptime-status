@@ -74,7 +74,7 @@ export function Sparkline({
       <path
         d={line}
         fill="none"
-        style={{ stroke: color, filter: 'drop-shadow(0 0 2px rgb(var(--c-signal) / 0.35))' }}
+        style={{ stroke: color, filter: `drop-shadow(0 0 2px color-mix(in srgb, ${color} 35%, transparent))` }}
         strokeWidth="1.25"
         strokeLinejoin="round"
         strokeLinecap="round"

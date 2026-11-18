@@ -1,5 +1,9 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import type { DayCell, OverallState, StatusStats } from '@/lib/types';
 import { UptimeTrace, UptimeLegend } from './UptimeTrace';
+import { StatusDot } from './StatusDot';
 
 const HERO: Record<
   OverallState,
@@ -21,13 +25,6 @@ const HERO: Record<
     desc: '暂时无法连接到 UptimeRobot，请稍后重试。',
     tone: 'muted',
   },
-};
-
-const DOT: Record<'up' | 'degraded' | 'down' | 'muted', string> = {
-  up: 'bg-up',
-  degraded: 'bg-degraded',
-  down: 'bg-down',
-  muted: 'bg-line-strong',
 };
 
 interface Props {
@@ -53,19 +50,14 @@ export function OverallHero({ overall, stats, days, historyDays, timezone }: Pro
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4 pb-6 pt-7">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="relative flex h-1.5 w-1.5">
-              {live && (
-                <span className="absolute inline-flex h-full w-full animate-pulseRing rounded-full bg-down" />
-              )}
-              <span className={`relative inline-flex h-1.5 w-1.5 rounded-full ${DOT[h.tone]}`} />
-            </span>
+            <StatusDot tone={h.tone} className={live ? 'signal-halo' : undefined} />
             <span className="eyebrow">当前状态 / SYSTEM</span>
           </div>
 
-          <h1 className="mt-3 text-[26px] font-semibold leading-tight tracking-tight sm:text-title">
+          <h1 className="mt-3 text-[26px] font-semibold leading-tight tracking-tight sm:text-title text-balance">
             {h.title}
           </h1>
-          <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-ink2">{h.desc}</p>
+          <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-ink2 text-pretty">{h.desc}</p>
         </div>
 
         <div className="shrink-0 text-right font-mono text-2xs uppercase leading-relaxed tracking-label text-subtle">
@@ -140,9 +132,23 @@ function Readout({ label, value, tone }: { label: string; value: number; tone?: 
     <div className="sm:py-2.5 sm:first:pt-0">
       <span className="eyebrow block">{label}</span>
       <span className={`mt-1 block font-mono text-[22px] font-medium leading-none tnum ${color}`}>
-        {value}
+        <RollingDigits value={value} />
       </span>
     </div>
+  );
+}
+
+function RollingDigits({ value }: { value: number }) {
+  return (
+    <>
+      {String(value)
+        .split('')
+        .map((digit, index) => (
+          <span key={`${index}-${digit}`} className="rolling-digit">
+            {digit}
+          </span>
+        ))}
+    </>
   );
 }
 
@@ -163,10 +169,91 @@ function arcPath(cx: number, cy: number, r: number, from: number, to: number): s
   return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${r} ${r} 0 ${large} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
 }
 
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function easeOutBack(t: number) {
+  const c1 = 1.70158;
+  const c3 = c1 + 1;
+  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+}
+
 /** 24h 可用率量表：径向刻度 + 弧形读数，光效只落在读数弧上 */
 function UptimeGauge({ value }: { value: number | null }) {
-  const pct = value === null ? 0 : Math.min(100, Math.max(0, value));
-  const end = GAUGE_START + (GAUGE_SWEEP * pct) / 100;
+  const targetPct = value === null ? 0 : Math.min(100, Math.max(0, value));
+  const [displayedPct, setDisplayedPct] = useState(0);
+  const [arcPct, setArcPct] = useState(0);
+  const displayedRef = useRef(0);
+  const arcRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (value === null) {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      displayedRef.current = 0;
+      arcRef.current = 0;
+      setDisplayedPct(0);
+      setArcPct(0);
+      return;
+    }
+
+    const from = displayedRef.current;
+    const fromArc = arcRef.current;
+    const to = targetPct;
+    const duration = 700;
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduceMotion || (from === to && fromArc === to)) {
+      displayedRef.current = to;
+      arcRef.current = to;
+      setDisplayedPct(to);
+      setArcPct(to);
+      return;
+    }
+
+    let start: number | null = null;
+
+    const step = (now: number) => {
+      if (start === null) start = now;
+      const t = Math.min(1, (now - start) / duration);
+
+      const nextPct = from + (to - from) * easeOutCubic(t);
+      const nextArcRaw = fromArc + (to - fromArc) * easeOutBack(t);
+      const nextArc = Math.min(100, Math.max(0, nextArcRaw));
+
+      displayedRef.current = nextPct;
+      arcRef.current = nextArc;
+      setDisplayedPct(nextPct);
+      setArcPct(nextArc);
+
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(step);
+      } else {
+        displayedRef.current = to;
+        arcRef.current = to;
+        setDisplayedPct(to);
+        setArcPct(to);
+        rafRef.current = null;
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [value, targetPct]);
+
+  const end = GAUGE_START + (GAUGE_SWEEP * arcPct) / 100;
 
   return (
     <svg
@@ -204,7 +291,7 @@ function UptimeGauge({ value }: { value: number | null }) {
       />
 
       {/* 读数弧 */}
-      {pct > 0 && (
+      {value !== null && arcPct > 0 && (
         <path
           d={arcPath(50, 50, 39, GAUGE_START, end)}
           fill="none"
@@ -220,41 +307,11 @@ function UptimeGauge({ value }: { value: number | null }) {
         textAnchor="middle"
         className="fill-ink text-[19px] font-medium tnum"
       >
-        {value === null ? '—' : value.toFixed(2)}
+        {value === null ? '—' : displayedPct.toFixed(2)}
       </text>
       <text x={50} y={64} textAnchor="middle" className="fill-subtle text-[7px] tracking-label">
         24H UPTIME
       </text>
     </svg>
   );
-}
-
-/** 把所有监控项按天合并成一条全局状态迹线 */
-export function mergeDays(groups: { monitors: { days: DayCell[] }[] }[], historyDays: number): DayCell[] {
-  const all: DayCell[][] = [];
-  for (const g of groups) for (const m of g.monitors) if (m.days.length) all.push(m.days);
-  if (!all.length) return [];
-
-  const len = Math.min(historyDays, Math.max(...all.map((d) => d.length)));
-  const out: DayCell[] = [];
-  for (let i = 0; i < len; i++) {
-    const cells = all.map((arr) => arr[arr.length - len + i]).filter(Boolean);
-    let state: DayCell['state'] = 'nodata';
-    let downSeconds = 0;
-    let hasData = false;
-    for (const c of cells) {
-      if (c.state !== 'nodata') hasData = true;
-      downSeconds = Math.max(downSeconds, c.downSeconds);
-      if (c.state === 'down') state = 'down';
-      else if (c.state === 'degraded' && state !== 'down') state = 'degraded';
-      else if (c.state === 'up' && state === 'nodata') state = 'up';
-    }
-    out.push({
-      start: cells[0].start,
-      state: hasData ? state : 'nodata',
-      downSeconds,
-      uptime: cells.reduce((a, c) => a + (c.uptime ?? 0), 0) / cells.length,
-    });
-  }
-  return out;
 }

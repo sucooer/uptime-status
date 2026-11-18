@@ -1,6 +1,7 @@
 import { siteConfig } from '@/lib/config';
 import { getStatus } from '@/lib/uptimerobot';
-import { mergeDays, OverallHero } from '@/components/OverallHero';
+import { mergeDays } from '@/lib/mergeDays';
+import { OverallHero } from '@/components/OverallHero';
 import { MonitorCard } from '@/components/MonitorCard';
 import { IncidentList } from '@/components/IncidentList';
 import { RefreshBar } from '@/components/RefreshBar';

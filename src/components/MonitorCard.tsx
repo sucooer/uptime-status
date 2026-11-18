@@ -1,7 +1,11 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import type { MonitorView } from '@/lib/types';
 import { Sparkline } from './Sparkline';
 import { UptimeTrace } from './UptimeTrace';
 import { ReasonLine } from './ReasonLine';
+import { StatusDot } from './StatusDot';
 import { formatDuration, formatTime } from '@/lib/time';
 
 const RAIL: Record<MonitorView['state'], string> = {
@@ -12,11 +16,21 @@ const RAIL: Record<MonitorView['state'], string> = {
 };
 
 const STATE_META = {
-  up: { text: '正常', chip: 'border-up/40 text-up' },
-  down: { text: '故障', chip: 'border-down/50 text-down' },
-  paused: { text: '已暂停', chip: 'border-line-strong text-subtle' },
-  pending: { text: '待检测', chip: 'border-degraded/40 text-degraded' },
+  up: { text: '正常' },
+  down: { text: '故障' },
+  paused: { text: '已暂停' },
+  pending: { text: '待检测' },
 } as const;
+
+type ChipState = {
+  prev: MonitorView['state'];
+  current: MonitorView['state'];
+  exiting: boolean;
+};
+
+function traceColorFor(state: MonitorView['state']): string {
+  return state === 'down' ? 'rgb(var(--c-down))' : 'rgb(var(--c-accent))';
+}
 
 interface Props {
   monitor: MonitorView;
@@ -28,7 +42,30 @@ interface Props {
 export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) {
   const meta = STATE_META[monitor.state];
   const live = monitor.state === 'down';
-  const traceColor = monitor.state === 'down' ? 'rgb(var(--c-down))' : 'rgb(var(--c-accent))';
+
+  const [chipAnim, setChipAnim] = useState<ChipState>({
+    prev: monitor.state,
+    current: monitor.state,
+    exiting: false,
+  });
+
+  if (monitor.state !== chipAnim.current) {
+    setChipAnim({
+      prev: chipAnim.current,
+      current: monitor.state,
+      exiting: true,
+    });
+  }
+
+  useEffect(() => {
+    if (!chipAnim.exiting) return;
+
+    const timer = setTimeout(() => {
+      setChipAnim((prev) => ({ ...prev, exiting: false }));
+    }, 320);
+
+    return () => clearTimeout(timer);
+  }, [chipAnim.exiting, chipAnim.current]);
 
   return (
     <article
@@ -43,19 +80,14 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            {live && (
-              <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-pulseRing rounded-full bg-down" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-down" />
-              </span>
-            )}
+            {live && <StatusDot tone="down" pulse />}
             <h3 className="truncate text-[15px] font-semibold leading-snug">
               {monitor.url ? (
                 <a
                   href={monitor.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="transition-colors hover:text-accent"
+                  className="inline-block transition-[color,transform] hover:text-accent active:scale-[0.96]"
                 >
                   {monitor.name}
                 </a>
@@ -72,7 +104,25 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
           )}
         </div>
 
-        <span className={`chip shrink-0 ${meta.chip}`}>{meta.text}</span>
+        <span className="relative inline-flex shrink-0">
+          {chipAnim.exiting && chipAnim.prev !== chipAnim.current && (
+            <span
+              key={`exit-${chipAnim.prev}-${chipAnim.current}`}
+              aria-hidden
+              className="chip chip-state-exit pointer-events-none absolute left-0 top-0"
+              data-state={chipAnim.prev}
+            >
+              {STATE_META[chipAnim.prev].text}
+            </span>
+          )}
+          <span
+            key={monitor.state}
+            className={`chip shrink-0 ${chipAnim.exiting ? 'chip-state-enter' : ''}`}
+            data-state={monitor.state}
+          >
+            {meta.text}
+          </span>
+        </span>
       </div>
 
       {/* 迹线 */}
@@ -104,13 +154,17 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
             {monitor.lastResponseMs !== null ? `${Math.round(monitor.lastResponseMs)}ms` : '—'}
           </span>
         </div>
-        <Sparkline values={monitor.responseSeries.map((p) => p.v)} color={traceColor} height={32} />
+        <Sparkline
+          values={monitor.responseSeries.map((p) => p.v)}
+          color={traceColorFor(monitor.state)}
+          height={32}
+        />
       </div>
 
       {/* 事件记录 */}
       {monitor.incidents.length > 0 && (
         <details className="group mt-3.5 border-t divider pt-2.5">
-          <summary className="cursor-pointer list-none font-mono text-2xs uppercase tracking-wider text-accent hover:underline">
+          <summary className="cursor-pointer list-none font-mono text-2xs uppercase tracking-wider text-accent transition-transform hover:underline active:scale-[0.96]">
             <span className="group-open:hidden">
               展开 {Math.min(monitor.incidents.length, 5)} 次事件
             </span>
@@ -163,5 +217,5 @@ function Metric({ label, value, unit }: { label: string; value: string; unit: st
 }
 
 function fmtRatio(v: number | null): string {
-  return v === null ? '-' : v.toFixed(v === 100 ? 0 : 2);
+  return v === null ? '—' : v.toFixed(v === 100 ? 0 : 2);
 }

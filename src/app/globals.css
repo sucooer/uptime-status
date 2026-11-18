@@ -16,7 +16,7 @@
   --c-surface-2: 239 247 247;
   --c-ink: 6 32 33;
   --c-ink-2: 45 82 80;
-  --c-subtle: 88 122 120;
+  --c-subtle: 80 116 114;
   --c-line: 190 213 211;
   --c-line-strong: 151 184 181;
   --c-up: 15 122 84;
@@ -160,6 +160,48 @@ body {
   .chip {
     @apply inline-flex items-center gap-1 border px-1.5 py-px font-mono text-2xs uppercase tracking-wider;
   }
+
+  .chip[data-state='up'] {
+    border-color: rgb(var(--c-up) / 0.4);
+    color: rgb(var(--c-up));
+  }
+
+  .chip[data-state='down'] {
+    border-color: rgb(var(--c-down) / 0.5);
+    color: rgb(var(--c-down));
+  }
+
+  .chip[data-state='paused'] {
+    border-color: rgb(var(--c-line-strong));
+    color: rgb(var(--c-subtle));
+  }
+
+  .chip[data-state='pending'] {
+    border-color: rgb(var(--c-degraded) / 0.4);
+    color: rgb(var(--c-degraded));
+  }
+
+  /* 总览故障信号点：双层外扩呼吸光晕 */
+  .signal-halo::before,
+  .signal-halo::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 9999px;
+    border: 1px solid rgb(var(--c-down) / 0.65);
+    transform: scale(1);
+    opacity: 0.75;
+    pointer-events: none;
+  }
+
+  .signal-halo::before {
+    animation: signalHalo 2.4s ease-in-out infinite;
+  }
+
+  .signal-halo::after {
+    animation: signalHalo 2.4s ease-in-out infinite;
+    animation-delay: -1.2s;
+  }
 }
 
 /* 焦点环：2px 强调色 + 2px 偏移，键盘可见 */
@@ -200,6 +242,19 @@ body {
   }
 }
 
+/* 外扩呼吸光晕：总览故障信号点双层扩散 */
+@keyframes signalHalo {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
 /* 呼吸灯：等待 / 连接中 */
 @keyframes breathe {
   0%,
@@ -231,6 +286,69 @@ body {
   }
 }
 
+/* 刷新按钮加载态：由 data-pending 驱动图标旋转 */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes chipStateExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.92);
+  }
+}
+
+@keyframes chipStateEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.88);
+    clip-path: inset(50% 50% 50% 50%);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(0) scale(1.03);
+    clip-path: inset(12% 12% 12% 12%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* 刻度条入场：每根刻度按序号升起 */
+@keyframes traceTickRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 数字逐位滚动入场 */
+@keyframes digitRoll {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @layer utilities {
   .animate-enter {
     opacity: 0;
@@ -257,6 +375,11 @@ body {
     animation: drawTrace 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
+  .animate-traceTick {
+    animation: traceTickRise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+    transform-box: fill-box;
+  }
+
   .animate-pulseRing {
     animation: pulseRing 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
@@ -269,9 +392,24 @@ body {
     animation: scanSweep 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  .transition-smooth {
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  .chip-state-exit {
+    animation: chipStateExit 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
   }
+
+  .chip-state-enter {
+    animation: chipStateEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .rolling-digit {
+    display: inline-block;
+    animation: digitRoll 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+}
+
+/* 刷新按钮加载态：由 data-pending 驱动图标旋转 */
+button[data-pending='true'] .refresh-icon {
+  animation: spin 1s linear infinite;
 }
 
 /* 尊重系统的「减少动态效果」设置 */
@@ -283,5 +421,32 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .chip-state-exit {
+    display: none !important;
+  }
+
+  .chip-state-enter {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    clip-path: none !important;
+  }
+
+  button[data-pending='true'] .refresh-icon {
+    animation-name: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-halo::before {
+    animation: none !important;
+    transform: scale(1.6) !important;
+    opacity: 0.35 !important;
+  }
+
+  .signal-halo::after {
+    display: none !important;
   }
 }
