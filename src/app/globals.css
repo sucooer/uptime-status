@@ -58,16 +58,27 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  background-color: rgb(var(--c-paper));
 }
 
 body {
-  @apply bg-paper font-sans text-ink antialiased;
-  /* 40px 一格的仪表网格，固定不动 */
+  @apply font-sans text-ink antialiased;
+  background: transparent;
+}
+
+/* 背景分层（自后向前）：星空穹顶 → 仪表网格 → 星空粒子 canvas */
+.backdrop-dome {
+  background:
+    radial-gradient(ellipse 120% 85% at 50% 100%, rgb(var(--c-surface)) 0%, rgb(var(--c-paper)) 72%),
+    rgb(var(--c-paper));
+}
+
+/* 40px 一格的仪表网格，固定不动 */
+.backdrop-grid {
   background-image:
     linear-gradient(to right, rgb(var(--grid) / var(--grid-opacity)) 1px, transparent 1px),
     linear-gradient(to bottom, rgb(var(--grid) / var(--grid-opacity)) 1px, transparent 1px);
   background-size: 40px 40px;
-  background-attachment: fixed;
 }
 
 /* 数字与标签统一等宽 + 表格数字，纵向才能对齐 */

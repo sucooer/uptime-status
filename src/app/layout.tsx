@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { siteConfig } from '@/lib/config';
+import { StarfieldBackground } from '@/components/StarfieldBackground';
 
 export const metadata: Metadata = {
   title: siteConfig.title,
@@ -28,7 +29,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen bg-transparent">
+        <div aria-hidden className="backdrop-dome pointer-events-none fixed inset-0" style={{ zIndex: -3 }} />
+        <div aria-hidden className="backdrop-grid pointer-events-none fixed inset-0" style={{ zIndex: -2 }} />
+        <StarfieldBackground />
+        {children}
+      </body>
     </html>
   );
 }

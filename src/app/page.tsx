@@ -3,8 +3,6 @@ import { getStatus } from '@/lib/uptimerobot';
 import { mergeDays } from '@/lib/mergeDays';
 import { OverallHero } from '@/components/OverallHero';
 import { MonitorGrid } from '@/components/MonitorGrid';
-import { IncidentList } from '@/components/IncidentList';
-import { IncidentTimeline } from '@/components/IncidentTimeline';
 import { StateToast } from '@/components/StateToast';
 import { RefreshBar } from '@/components/RefreshBar';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -22,7 +20,6 @@ export default async function Home() {
   const globalDays = mergeDays(data.groups, data.historyDays);
   const downNames = data.groups.flatMap((g) => g.monitors).filter((m) => m.state === 'down').map((m) => m.name);
   const stateSnapshot = data.groups.flatMap((g) => g.monitors).map((m) => ({ id: m.id, name: m.name, state: m.state }));
-  const nowMs = Date.now();
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6">
@@ -81,17 +78,6 @@ export default async function Home() {
         />
       )}
 
-      {/* 近期事件 */}
-      <section className="mt-10">
-        <SectionTitle title="近期事件" count={data.incidents.length} />
-        <IncidentTimeline incidents={data.incidents} timezone={siteConfig.timezone} now={nowMs} />
-        <IncidentList
-          incidents={data.incidents}
-          timezone={siteConfig.timezone}
-          historyDays={data.historyDays}
-        />
-      </section>
-
       <footer className="mt-14 flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t divider pt-5 font-mono text-2xs uppercase tracking-wider text-subtle">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <span>
@@ -140,16 +126,6 @@ function copyrightYear(): string {
   const startYear = 2026;
   const currentYear = new Date().getFullYear();
   return currentYear > startYear ? `${startYear} - ${currentYear}` : String(startYear);
-}
-
-function SectionTitle({ title, count }: { title: string; count: number }) {
-  return (
-    <h3 className="mb-3 flex items-center gap-3">
-      <span className="eyebrow text-accent">{title}</span>
-      <span className="font-mono text-2xs tnum text-subtle">[{count}]</span>
-      <span aria-hidden className="rule flex-1" />
-    </h3>
-  );
 }
 
 function Code({ children }: { children: React.ReactNode }) {
