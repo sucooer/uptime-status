@@ -6,6 +6,8 @@ import { Sparkline } from './Sparkline';
 import { UptimeTrace } from './UptimeTrace';
 import { ReasonLine } from './ReasonLine';
 import { StatusDot } from './StatusDot';
+import { HudButton } from './HudButton';
+import { MonitorDetail } from './MonitorDetail';
 import { formatDuration, formatTime } from '@/lib/time';
 
 const RAIL: Record<MonitorView['state'], string> = {
@@ -42,12 +44,15 @@ interface Props {
 export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) {
   const meta = STATE_META[monitor.state];
   const live = monitor.state === 'down';
+  // SSL 到期倒计时：90 天为参考有效期（进度条宽度按此换算）
+  const sslDays = monitor.sslExpires === null ? null : Math.ceil((monitor.sslExpires * 1000 - Date.now()) / 86400000);
 
   const [chipAnim, setChipAnim] = useState<ChipState>({
     prev: monitor.state,
     current: monitor.state,
     exiting: false,
   });
+  const [detailOpen, setDetailOpen] = useState(false);
 
   if (monitor.state !== chipAnim.current) {
     setChipAnim({
@@ -115,7 +120,15 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
           )}
         </div>
 
-        <span className="relative inline-flex shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
+          <HudButton
+            onClick={() => setDetailOpen(true)}
+            aria-label={`查看 ${monitor.name} 详情`}
+            className="h-7 px-2 font-mono text-2xs uppercase tracking-wider"
+          >
+            详情
+          </HudButton>
+          <span className="relative inline-flex shrink-0">
           {chipAnim.exiting && chipAnim.prev !== chipAnim.current && (
             <span
               key={`exit-${chipAnim.prev}-${chipAnim.current}`}
@@ -133,7 +146,8 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
           >
             {meta.text}
           </span>
-        </span>
+          </span>
+        </div>
       </div>
 
       {/* 迹线 */}
@@ -171,6 +185,20 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
           height={32}
         />
       </div>
+
+      {sslDays !== null && (
+        <div className="mt-3.5">
+          <div className="mb-1.5 flex items-baseline justify-between font-mono text-2xs uppercase tracking-wider text-subtle">
+            <span>SSL 证书</span>
+            <span suppressHydrationWarning className={sslDays < 7 ? 'text-down' : sslDays < 14 ? 'text-degraded' : 'text-subtle'}>
+              {sslDays < 0 ? '已过期' : `${sslDays} 天后到期`}
+            </span>
+          </div>
+          <div className="h-[3px] bg-line">
+            <div className={`h-full ${sslDays < 7 ? 'bg-down' : sslDays < 14 ? 'bg-degraded' : 'bg-accent'}`} style={{ width: `${sslDays < 0 ? 100 : Math.min(100, Math.max(2, Math.round((sslDays / 90) * 100)))}%` }} />
+          </div>
+        </div>
+      )}
 
       {/* 事件记录 */}
       {monitor.incidents.length > 0 && (
@@ -211,6 +239,12 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
           </ul>
         </details>
       )}
+      <MonitorDetail
+        monitor={monitor}
+        timezone={timezone}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+      />
     </article>
   );
 }
@@ -220,7 +254,7 @@ function Metric({ label, value, unit }: { label: string; value: string; unit: st
     <div className="bg-surface px-2 py-1.5">
       <div className="font-mono text-2xs uppercase tracking-wider text-subtle">{label}</div>
       <div className="mt-0.5 font-mono text-xs font-semibold leading-none tnum">
-        {value}
+        <span key={value} className="metric-swap">{value}</span>
         <span className="ml-0.5 text-2xs font-normal text-subtle">{unit}</span>
       </div>
     </div>

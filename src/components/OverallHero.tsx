@@ -117,7 +117,7 @@ export function OverallHero({ overall, stats, days, historyDays, timezone }: Pro
             <div className="min-w-0 sm:mt-4">
               <span className="eyebrow block">平均响应</span>
               <span className="mt-1 block font-mono text-[22px] font-medium leading-none tnum text-ink">
-                {stats.avgResponseMs !== null ? Math.round(stats.avgResponseMs) : '—'}
+                <span key={stats.avgResponseMs ?? 'none'} className="metric-swap">{stats.avgResponseMs !== null ? Math.round(stats.avgResponseMs) : '—'}</span>
                 <small className="ml-1 font-mono text-2xs font-normal text-subtle">ms</small>
               </span>
             </div>
