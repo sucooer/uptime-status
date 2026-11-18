@@ -23,11 +23,13 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
   const [pending, startTransition] = useTransition();
   const [tick, setTick] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
   const [justDone, setJustDone] = useState(false);
   const prevPendingRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
+    setReduceMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
 
   useEffect(() => {
@@ -62,6 +64,8 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
     0,
     Math.round(intervalMs / 1000) - Math.round(((Date.now() - updatedAt) % intervalMs) / 1000),
   );
+  const intervalSec = Math.max(1, Math.round(intervalMs / 1000));
+  const progress = Math.min(1, Math.max(0, 1 - secondsToNext / intervalSec));
 
   return (
     <div className="flex items-center gap-2.5">
@@ -90,6 +94,13 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
           <span
             aria-hidden
             className="pointer-events-none absolute inset-y-0 w-full animate-scan bg-gradient-to-r from-transparent via-accent/25 to-transparent"
+          />
+        )}
+        {mounted && !pending && !reduceMotion && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 left-0 h-[2px] bg-signal transition-[width] duration-1000 ease-linear"
+            style={{ width: `${Math.round(progress * 100)}%` }}
           />
         )}
         {justDone ? (

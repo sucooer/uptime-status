@@ -20,12 +20,13 @@ export function IncidentList({ incidents, timezone, historyDays }: Props) {
 
   return (
     <div className="card divide-y divide-line">
-      {incidents.slice(0, 10).map((inc) => {
+      {incidents.slice(0, 10).map((inc, idx) => {
         const active = !inc.end;
         return (
           <div
             key={`${inc.monitorId}-${inc.start}`}
-            className="flex items-start justify-between gap-3 px-4 py-3.5"
+            className="flex items-start justify-between gap-3 px-4 py-3.5 animate-enter"
+            style={{ animationDelay: `${Math.min(idx, 7) * 0.04}s` }}
           >
             <div className="flex min-w-0 items-start gap-3">
               {/* 竖条刻度，与卡片左侧导轨同一套语言：红=在故障中，琥珀=已恢复 */}

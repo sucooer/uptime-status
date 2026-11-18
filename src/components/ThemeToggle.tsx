@@ -14,12 +14,21 @@ export function ThemeToggle() {
 
   function toggle() {
     const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle('dark', next);
-    try {
-      localStorage.setItem('theme', next ? 'dark' : 'light');
-    } catch {
-      /* 隐私模式下忽略 */
+    const apply = () => {
+      setDark(next);
+      document.documentElement.classList.toggle('dark', next);
+      try {
+        localStorage.setItem('theme', next ? 'dark' : 'light');
+      } catch {
+        /* 隐私模式下忽略 */
+      }
+    };
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const doc = document as Document & { startViewTransition?: (callback: () => void) => void };
+    if (!reduceMotion && typeof doc.startViewTransition === 'function') {
+      doc.startViewTransition(apply);
+    } else {
+      apply();
     }
   }
 

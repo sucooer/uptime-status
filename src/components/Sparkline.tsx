@@ -34,6 +34,11 @@ export function Sparkline({
   const max = Math.max(...data);
   const min = Math.min(...data);
   const span = max - min || 1;
+  const sorted = [...data].sort((a, b) => a - b);
+  const quantile = (p: number) => sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1))];
+  const p50 = quantile(0.5);
+  const p95 = quantile(0.95);
+  const yFor = (v: number) => H - 3 - ((v - min) / span) * (H - 8);
   const step = data.length > 1 ? W / (data.length - 1) : W;
 
   const points = data.map((v, i) => {
@@ -49,11 +54,11 @@ export function Sparkline({
     <svg
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
-      className={className}
+      className={className ? `animate-trace ${className}` : 'animate-trace'}
       style={{ width: '100%', height: H }}
       role="img"
       suppressHydrationWarning
-      aria-label={`响应时间趋势，最近 ${data.length} 个采样点，峰值 ${Math.round(max)} 毫秒，谷值 ${Math.round(min)} 毫秒`}
+      aria-label={`响应时间趋势，最近 ${data.length} 个采样点，峰值 ${Math.round(max)} 毫秒，谷值 ${Math.round(min)} 毫秒，中位数 ${Math.round(p50)} 毫秒，p95 ${Math.round(p95)} 毫秒`}
     >
       {/* 参考网格：发丝虚线，只做刻度参考不抢数据 */}
       {[0.33, 0.66].map((r) => (
@@ -69,6 +74,31 @@ export function Sparkline({
           vectorEffect="non-scaling-stroke"
         />
       ))}
+
+      {p95 > min && (
+        <rect x={0} y={0} width={W} height={yFor(p95)} className="fill-degraded" fillOpacity={0.06} />
+      )}
+
+      <line
+        x1={0}
+        x2={W}
+        y1={yFor(p50)}
+        y2={yFor(p50)}
+        className="stroke-subtle"
+        strokeWidth={1}
+        strokeDasharray="2 4"
+        vectorEffect="non-scaling-stroke"
+      />
+      <line
+        x1={0}
+        x2={W}
+        y1={yFor(p95)}
+        y2={yFor(p95)}
+        className="stroke-subtle"
+        strokeWidth={1}
+        strokeDasharray="2 4"
+        vectorEffect="non-scaling-stroke"
+      />
 
       <path d={area} style={{ fill: color }} fillOpacity="0.07" />
       <path
