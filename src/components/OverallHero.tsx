@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { DayCell, OverallState, StatusStats } from '@/lib/types';
 import { UptimeTrace, UptimeLegend } from './UptimeTrace';
 import { StatusDot } from './StatusDot';
+import { HeroParticles } from './HeroParticles';
 
 const HERO: Record<
   OverallState,
@@ -69,6 +70,7 @@ export function OverallHero({ overall, stats, days, historyDays, timezone }: Pro
 
       {/* 仪表主框 */}
       <div className="hud-frame">
+        <HeroParticles />
         <div className="grid grid-cols-1 sm:grid-cols-[112px_minmax(0,1fr)_144px]">
           {/* 左：计数读数 */}
           <aside className="grid grid-cols-3 gap-3 border-b divider px-4 py-3.5 sm:block sm:border-b-0 sm:border-r sm:px-3.5 sm:py-4">
