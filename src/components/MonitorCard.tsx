@@ -62,7 +62,7 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
 
     const timer = setTimeout(() => {
       setChipAnim((prev) => ({ ...prev, exiting: false }));
-    }, 320);
+    }, 450); // 450ms 需覆盖 420ms 的导轨充能/边框闪色动画，避免动效被提前截断
 
     return () => clearTimeout(timer);
   }, [chipAnim.exiting, chipAnim.current]);
@@ -71,10 +71,21 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
     <article
       className={`card relative py-3.5 pl-4 pr-4 transition-colors hover:border-line-strong ${
         live ? 'border-down/45' : ''
-      }`}
+      } ${chipAnim.exiting && chipAnim.prev !== chipAnim.current ? 'state-flash' : ''}`}
     >
       {/* 左侧状态导轨：一眼扫过整列就能看出谁出了问题 */}
-      <span aria-hidden className={`absolute inset-y-0 left-0 w-[3px] ${RAIL[monitor.state]}`} />
+      <span
+        aria-hidden
+        className={`absolute inset-y-0 left-0 w-[3px] overflow-hidden ${RAIL[monitor.state]}`}
+      >
+        {chipAnim.exiting && chipAnim.prev !== chipAnim.current && (
+          <span
+            key={`${chipAnim.prev}-${chipAnim.current}`}
+            aria-hidden
+            className="rail-charge absolute inset-0 bg-white/60"
+          />
+        )}
+      </span>
 
       {/* 标题行 */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">

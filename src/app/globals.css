@@ -366,6 +366,22 @@ body {
   }
 }
 
+/* 状态变更：导轨充能 + 边框闪色（一次性） */
+@keyframes railCharge {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes stateFlash {
+  from {
+    border-color: rgb(var(--c-signal) / 0.8);
+  }
+}
+
 @layer utilities {
   .animate-enter {
     opacity: 0;
@@ -411,6 +427,14 @@ body {
 
   .animate-iconSwap {
     animation: iconSwap 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .rail-charge {
+    animation: railCharge 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .state-flash {
+    animation: stateFlash 0.42s ease-out both;
   }
 
   .chip-state-exit {
