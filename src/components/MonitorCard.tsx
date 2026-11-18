@@ -4,11 +4,9 @@ import { useEffect, useState } from 'react';
 import type { MonitorView } from '@/lib/types';
 import { Sparkline } from './Sparkline';
 import { UptimeTrace } from './UptimeTrace';
-import { ReasonLine } from './ReasonLine';
 import { StatusDot } from './StatusDot';
 import { HudButton } from './HudButton';
 import { MonitorDetail } from './MonitorDetail';
-import { formatDuration, formatTime } from '@/lib/time';
 
 const RAIL: Record<MonitorView['state'], string> = {
   up: 'bg-up',
@@ -200,45 +198,6 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
         </div>
       )}
 
-      {/* 事件记录 */}
-      {monitor.incidents.length > 0 && (
-        <details className="group mt-3.5 border-t divider pt-2.5">
-          <summary className="cursor-pointer list-none font-mono text-2xs uppercase tracking-wider text-accent transition-transform hover:underline active:scale-[0.96]">
-            <span className="group-open:hidden">
-              展开 {Math.min(monitor.incidents.length, 5)} 次事件
-            </span>
-            <span className="hidden group-open:inline">收起</span>
-          </summary>
-          <ul className="mt-2.5 space-y-2.5">
-            {monitor.incidents.slice(0, 5).map((inc) => {
-              const active = !inc.end;
-              return (
-                <li
-                  key={`${inc.start}-${inc.end ?? 'now'}`}
-                  className="flex items-start justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <div className="font-mono text-2xs tnum text-subtle">
-                      {formatTime(inc.start * 1000, timezone)}
-                      {inc.end
-                        ? ` – ${formatTime(inc.end * 1000, timezone, { hour: '2-digit', minute: '2-digit', hour12: false })}`
-                        : ''}
-                    </div>
-                    <ReasonLine incident={inc} active={active} className="mt-1" />
-                  </div>
-                  <span
-                    className={`shrink-0 font-mono text-2xs uppercase tracking-wider ${
-                      active ? 'text-down' : 'text-subtle'
-                    }`}
-                  >
-                    {active ? '持续中' : formatDuration(inc.durationSeconds ?? 0)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </details>
-      )}
       <MonitorDetail
         monitor={monitor}
         timezone={timezone}
