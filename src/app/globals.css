@@ -150,10 +150,15 @@ body {
     @apply h-px w-full bg-line;
   }
 
-  /* 控件统一方角描边，无圆角 */
+  /* 控件：圆角描边，悬停上浮带光晕，按下回缩 */
   .ctl {
-    @apply inline-flex items-center justify-center border border-line bg-surface2 text-ink2
-      transition-colors hover:border-line-strong hover:text-ink;
+    @apply inline-flex items-center justify-center rounded-[10px] border border-line bg-surface2 text-ink2
+      transition-[color,border-color,transform,box-shadow] duration-200 ease-out
+      hover:-translate-y-px hover:border-line-strong hover:text-ink active:scale-[0.96];
+  }
+
+  .ctl:hover {
+    box-shadow: 0 6px 18px rgb(var(--c-signal) / 0.25);
   }
 
   /* 角形小标签 */
@@ -349,6 +354,18 @@ body {
   }
 }
 
+/* 主题图标切换：旋转淡入 */
+@keyframes iconSwap {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
 @layer utilities {
   .animate-enter {
     opacity: 0;
@@ -390,6 +407,10 @@ body {
 
   .animate-scan {
     animation: scanSweep 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-iconSwap {
+    animation: iconSwap 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .chip-state-exit {
