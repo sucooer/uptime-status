@@ -2,8 +2,10 @@ import { siteConfig } from '@/lib/config';
 import { getStatus } from '@/lib/uptimerobot';
 import { mergeDays } from '@/lib/mergeDays';
 import { OverallHero } from '@/components/OverallHero';
-import { MonitorCard } from '@/components/MonitorCard';
+import { MonitorGrid } from '@/components/MonitorGrid';
 import { IncidentList } from '@/components/IncidentList';
+import { IncidentTimeline } from '@/components/IncidentTimeline';
+import { StateToast } from '@/components/StateToast';
 import { RefreshBar } from '@/components/RefreshBar';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SiteLogo } from '@/components/SiteLogo';
@@ -19,6 +21,8 @@ export default async function Home() {
   const data = await getStatus();
   const globalDays = mergeDays(data.groups, data.historyDays);
   const downNames = data.groups.flatMap((g) => g.monitors).filter((m) => m.state === 'down').map((m) => m.name);
+  const stateSnapshot = data.groups.flatMap((g) => g.monitors).map((m) => ({ id: m.id, name: m.name, state: m.state }));
+  const nowMs = Date.now();
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6">
@@ -67,33 +71,20 @@ export default async function Home() {
         </div>
       )}
 
-      {/* 监控项分组 */}
-      <div id="monitor-groups">
-        {data.groups.map((group) => (
-          <section key={group.name} className="mt-10">
-            <SectionTitle title={group.name} count={group.monitors.length} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              {group.monitors.map((m, idx) => (
-                <div
-                  key={m.id}
-                  className={`animate-enter ${idx < 5 ? `stagger-${idx + 1}` : ''}`}
-                >
-                  <MonitorCard
-                    monitor={m}
-                    timezone={siteConfig.timezone}
-                    showUrl={siteConfig.showUrl}
-                    historyDays={data.historyDays}
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
-      </div>
+      {/* 监控项分组（带状态筛选） */}
+      {data.groups.length > 0 && (
+        <MonitorGrid
+          groups={data.groups}
+          timezone={siteConfig.timezone}
+          showUrl={siteConfig.showUrl}
+          historyDays={data.historyDays}
+        />
+      )}
 
       {/* 近期事件 */}
       <section className="mt-10">
         <SectionTitle title="近期事件" count={data.incidents.length} />
+        <IncidentTimeline incidents={data.incidents} timezone={siteConfig.timezone} now={nowMs} />
         <IncidentList
           incidents={data.incidents}
           timezone={siteConfig.timezone}
@@ -139,6 +130,8 @@ export default async function Home() {
           </span>
         </div>
       </footer>
+
+      <StateToast snapshot={stateSnapshot} />
     </main>
   );
 }
