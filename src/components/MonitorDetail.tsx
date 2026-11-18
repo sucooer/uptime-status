@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { MonitorView } from '@/lib/types';
 import { formatDuration, formatTime } from '@/lib/time';
@@ -27,6 +28,11 @@ const DATE_OPTIONS: Intl.DateTimeFormatOptions = {
 export function MonitorDetail({ monitor, timezone, open, onClose }: Props) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // ① 记录打开前的焦点 → 聚焦关闭按钮 → 关闭时恢复焦点
   useEffect(() => {
@@ -90,10 +96,11 @@ export function MonitorDetail({ monitor, timezone, open, onClose }: Props) {
     }
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-
-  return (
+  // 渲染到 body：卡片祖先上的 animate-enter（transform）会成为 fixed 的包含块，
+  // 直接内联渲染会让抽屉被限制在卡片内。
+  return createPortal(
     <div className="fixed inset-0 z-50">
       <button
         type="button"
@@ -223,6 +230,7 @@ export function MonitorDetail({ monitor, timezone, open, onClose }: Props) {
           </section>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
