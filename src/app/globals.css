@@ -3,404 +3,257 @@
 @tailwind utilities;
 
 /* ---------------------------------------------------------------------------
-   设计令牌 —— 赛博网络指挥终端。
-   深色为基底：近黑底 + 离子青信号 + 冷白数据。
-   浅色是「白昼仪表」变体：淡青白纸面 + 深青墨色，几何与字体完全一致。
-   霓虹只给信号（状态点、数据迹线、命令按钮），正文始终清晰。
+   设计系统 2.0 —— Aero Aurora (极光琉璃 · 现代流体视觉系统)
+   全面拥抱现代高级感 + 纯净柔和的流体极光呼吸光晕
+   极致性能标准：GPU 硬件合成层加速，0 布局抖动，锁定 120 FPS
    --------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
 
-  --c-paper: 234 243 243;
-  --c-surface: 250 254 254;
-  --c-surface-2: 239 247 247;
-  --c-ink: 6 32 33;
-  --c-ink-2: 45 82 80;
-  --c-subtle: 80 116 114;
-  --c-line: 190 213 211;
-  --c-line-strong: 151 184 181;
-  --c-up: 15 122 84;
-  --c-degraded: 146 88 8;
-  --c-down: 178 40 40;
-  --c-accent: 11 110 122;
-  --c-signal: 13 128 128;
+  --c-paper: 248 250 252;
+  --c-surface: 255 255 255;
+  --c-surface-2: 241 245 249;
+  --c-ink: 15 23 42;
+  --c-ink2: 71 85 105;
+  --c-subtle: 148 163 184;
+  --c-line: 226 232 240;
+  --c-line-strong: 203 213 225;
+  --c-up: 16 185 129;
+  --c-degraded: 245 158 11;
+  --c-down: 244 63 94;
+  --c-accent: 2 132 199;
+  --c-signal: 16 185 129;
 
-  --grid: 11 110 122;
-  --grid-opacity: 0.08;
-
-  /* 切角尺寸：HUD 面板的标志性几何 */
-  --corner: 12px;
-  --glow: 0.04;
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-specular: rgba(255, 255, 255, 0.9);
 }
 
 .dark {
   color-scheme: dark;
 
-  --c-paper: 3 11 15;
-  --c-surface: 9 33 36;
-  --c-surface-2: 6 24 25;
-  --c-ink: 220 246 245;
-  --c-ink-2: 178 212 193;
-  --c-subtle: 135 175 181;
-  --c-line: 30 69 73;
-  --c-line-strong: 40 96 91;
-  --c-up: 134 239 172;
-  --c-degraded: 253 224 71;
-  --c-down: 254 202 202;
-  --c-accent: 149 248 226;
-  --c-signal: 70 243 231;
+  --c-paper: 7 10 19;
+  --c-surface: 15 23 42;
+  --c-surface-2: 24 35 60;
+  --c-ink: 241 245 249;
+  --c-ink2: 148 163 184;
+  --c-subtle: 100 116 139;
+  --c-line: 30 41 59;
+  --c-line-strong: 51 65 85;
+  --c-up: 16 185 129;
+  --c-degraded: 245 158 11;
+  --c-down: 244 63 94;
+  --c-accent: 56 189 248;
+  --c-signal: 16 185 129;
 
-  --grid: 33 82 88;
-  --grid-opacity: 0.07;
-
-  --glow: 0.05;
+  --glass-bg: rgba(15, 23, 42, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-specular: rgba(255, 255, 255, 0.12);
 }
 
 html {
   -webkit-text-size-adjust: 100%;
   background-color: rgb(var(--c-paper));
+  scroll-behavior: smooth;
 }
 
 body {
   @apply font-sans text-ink antialiased;
   background: transparent;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* 背景分层（自后向前）：星空穹顶 → 仪表网格 → 星空粒子 canvas */
-.backdrop-dome {
-  background:
-    radial-gradient(ellipse 120% 85% at 50% 100%, rgb(var(--c-surface)) 0%, rgb(var(--c-paper)) 72%),
-    rgb(var(--c-paper));
-}
-
-/* 40px 一格的仪表网格，固定不动 */
-.backdrop-grid {
-  background-image:
-    linear-gradient(to right, rgb(var(--grid) / var(--grid-opacity)) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(var(--grid) / var(--grid-opacity)) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* 数字与标签统一等宽 + 表格数字，纵向才能对齐 */
+/* 表格等宽数字 */
 .tnum {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
 
 @layer components {
-  /* 面板：切角几何 + 发丝边框 + 极淡内辉光。不用投影，靠几何与边框分层 */
+  /* 现代磨砂玻璃卡片：优化模糊半径至 10px，明确指定 transition 属性，避免全属性重排 */
   .card {
-    @apply relative border border-line bg-surface;
-    clip-path: polygon(
-      0 0,
-      calc(100% - var(--corner)) 0,
-      100% var(--corner),
-      100% 100%,
-      var(--corner) 100%,
-      0 calc(100% - var(--corner))
-    );
-    box-shadow: inset 0 0 45px rgb(var(--c-signal) / var(--glow));
+    @apply relative overflow-hidden rounded-2xl border transition-[transform,box-shadow,border-color] duration-200 ease-out;
+    background-color: var(--glass-bg);
+    border-color: var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 0 var(--glass-specular);
   }
 
-  /* 卡片切角角标：平时隐藏，悬停时在两个直角处点亮（与 HUD 主框同语言） */
-  .card::before,
-  .card::after {
-    content: '';
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease-out;
+  .dark .card {
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 0 var(--glass-specular);
   }
 
-  .card::before {
-    top: 0;
-    left: 0;
-    border-top: 2px solid rgb(var(--c-accent));
-    border-left: 2px solid rgb(var(--c-accent));
+  .card:hover {
+    border-color: rgb(var(--c-accent) / 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.12),
+                inset 0 1px 0 0 var(--glass-specular),
+                0 0 16px -2px rgb(var(--c-accent) / 0.12);
   }
 
-  .card::after {
-    right: 0;
-    bottom: 0;
-    border-right: 2px solid rgb(var(--c-accent));
-    border-bottom: 2px solid rgb(var(--c-accent));
+  .dark .card:hover {
+    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.6),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+                0 0 20px -2px rgb(var(--c-accent) / 0.15);
   }
 
-  .card:hover::before,
-  .card:hover::after {
-    opacity: 1;
-  }
-
-  /* HUD 主框：切角更深，两个直角处加角标，强调仪表外框 */
+  /* 核心看板悬浮晶体岛 */
   .hud-frame {
-    @apply relative border border-line-strong bg-surface;
-    clip-path: polygon(
-      0 0,
-      calc(100% - var(--corner)) 0,
-      100% var(--corner),
-      100% 100%,
-      var(--corner) 100%,
-      0 calc(100% - var(--corner))
-    );
-    box-shadow: inset 0 0 45px rgb(var(--c-signal) / var(--glow));
+    @apply relative overflow-hidden rounded-3xl border transition-[transform,box-shadow] duration-200 ease-out;
+    background-color: var(--glass-bg);
+    border-color: var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 0 var(--glass-specular);
   }
 
-  .hud-frame::before,
-  .hud-frame::after {
-    content: '';
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    pointer-events: none;
+  .dark .hud-frame {
+    box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 0 var(--glass-specular);
   }
 
-  .hud-frame::before {
-    top: 0;
-    left: 0;
-    border-top: 2px solid rgb(var(--c-accent));
-    border-left: 2px solid rgb(var(--c-accent));
-  }
-
-  .hud-frame::after {
-    right: 0;
-    bottom: 0;
-    border-right: 2px solid rgb(var(--c-accent));
-    border-bottom: 2px solid rgb(var(--c-accent));
-  }
-
-  /* 卡片内部再分层用的浅底块 */
-  .inset {
-    @apply border border-line bg-surface2;
-  }
-
-  .muted {
-    @apply text-subtle;
-  }
-
-  .divider {
-    @apply border-line;
-  }
-
-  /* 丝印文字：等宽、大写、宽字距的仪表标签 */
-  .eyebrow {
-    @apply font-mono text-2xs uppercase tracking-label text-subtle;
-  }
-
-  .rule {
-    @apply h-px w-full bg-line;
-  }
-
-  /* 控件：圆角描边，悬停上浮带光晕，按下回缩 */
+  /* 控件交互按钮 */
   .ctl {
-    @apply inline-flex items-center justify-center rounded-[10px] border border-line bg-surface2 text-ink2
-      transition-[color,border-color,transform,box-shadow] duration-200 ease-out
-      hover:-translate-y-px hover:border-line-strong hover:text-ink active:scale-[0.96];
+    @apply inline-flex items-center justify-center rounded-xl border transition-[transform,background-color,border-color,color] duration-150 ease-out;
+    background-color: rgb(var(--c-surface) / 0.65);
+    border-color: var(--glass-border);
+    color: rgb(var(--c-ink2));
   }
 
   .ctl:hover {
-    box-shadow: 0 6px 18px rgb(var(--c-signal) / 0.25);
+    @apply -translate-y-0.5 text-ink;
+    border-color: rgb(var(--c-line-strong));
+    background-color: rgb(var(--c-surface));
   }
 
-  /* 角形小标签 */
+  .ctl:active {
+    @apply scale-95;
+  }
+
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-wider text-subtle font-medium;
+  }
+
+  /* 状态指示胶囊 */
   .chip {
-    @apply inline-flex items-center gap-1 border px-1.5 py-px font-mono text-2xs uppercase tracking-wider;
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-xs font-medium transition-[background-color,border-color,color] duration-150;
   }
 
   .chip[data-state='up'] {
-    border-color: rgb(var(--c-up) / 0.4);
+    border-color: rgb(var(--c-up) / 0.3);
+    background-color: rgb(var(--c-up) / 0.08);
     color: rgb(var(--c-up));
   }
 
   .chip[data-state='down'] {
-    border-color: rgb(var(--c-down) / 0.5);
+    border-color: rgb(var(--c-down) / 0.4);
+    background-color: rgb(var(--c-down) / 0.1);
     color: rgb(var(--c-down));
   }
 
   .chip[data-state='paused'] {
-    border-color: rgb(var(--c-line-strong));
+    border-color: rgb(var(--c-subtle) / 0.3);
+    background-color: rgb(var(--c-subtle) / 0.08);
     color: rgb(var(--c-subtle));
   }
 
   .chip[data-state='pending'] {
-    border-color: rgb(var(--c-degraded) / 0.4);
+    border-color: rgb(var(--c-degraded) / 0.3);
+    background-color: rgb(var(--c-degraded) / 0.08);
     color: rgb(var(--c-degraded));
-  }
-
-  /* 总览故障信号点：双层外扩呼吸光晕 */
-  .signal-halo::before,
-  .signal-halo::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: 9999px;
-    border: 1px solid rgb(var(--c-down) / 0.65);
-    transform: scale(1);
-    opacity: 0.75;
-    pointer-events: none;
-  }
-
-  .signal-halo::before {
-    animation: signalHalo 2.4s ease-in-out infinite;
-  }
-
-  .signal-halo::after {
-    animation: signalHalo 2.4s ease-in-out infinite;
-    animation-delay: -1.2s;
   }
 }
 
-/* 焦点环：2px 强调色 + 2px 偏移，键盘可见 */
+/* 焦点环 */
 :where(a, button, summary, [tabindex]):focus-visible {
   outline: 2px solid rgb(var(--c-accent));
-  outline-offset: 2px;
+  outline-offset: 3px;
+  border-radius: 0.5rem;
 }
 
 ::selection {
-  background: rgb(var(--c-accent) / 0.22);
+  background: rgb(var(--c-accent) / 0.25);
 }
 
 /* ---------------------------------------------------------------------------
-   动画系统
+   极光与流体动效系统（完全运行在 GPU 合成层）
    --------------------------------------------------------------------------- */
 
-/* 卡片进入：从下方淡入 */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 脉冲环：故障状态提示 */
-@keyframes pulseRing {
-  0% {
-    transform: scale(1);
-    opacity: 0.9;
-  }
-  100% {
-    transform: scale(3);
-    opacity: 0;
-  }
-}
-
-/* 外扩呼吸光晕：总览故障信号点双层扩散 */
-@keyframes signalHalo {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.75;
+/* 极光球平滑飘动动画 */
+@keyframes floatOrb1 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: scale(2.2);
-    opacity: 0;
+    transform: translate3d(45px, 35px, 0) scale(1.08);
   }
 }
 
-/* 呼吸灯：等待 / 连接中 */
-@keyframes breathe {
-  0%,
-  100% {
-    opacity: 1;
+@keyframes floatOrb2 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    opacity: 0.45;
+    transform: translate3d(-40px, 25px, 0) scale(1.06);
   }
 }
 
-/* 刻度滚动：迹线绘制用 */
-@keyframes drawTrace {
+@keyframes floatOrb3 {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(30px, -40px, 0) scale(0.94);
+  }
+}
+
+/* 自然弹性升起 */
+@keyframes springFadeIn {
   from {
-    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
   }
   to {
-    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
-/* 扫描：取数进行时，命令条上的诊断扫掠 */
-@keyframes scanSweep {
+/* 雷达水波涟漪扩散 */
+@keyframes radarRipple {
   0% {
-    transform: translateX(-110%);
+    transform: scale(0.9);
+    opacity: 0.85;
   }
   100% {
-    transform: translateX(110%);
+    transform: scale(3.2);
+    opacity: 0;
   }
 }
 
-/* 刷新按钮加载态：由 data-pending 驱动图标旋转 */
-@keyframes spin {
+/* 刻度柱波浪拔起 */
+@keyframes barRise {
   from {
-    transform: rotate(0deg);
+    transform: scaleY(0.1);
+    opacity: 0;
   }
   to {
-    transform: rotate(360deg);
+    transform: scaleY(1);
+    opacity: 1;
   }
 }
 
-@keyframes chipStateExit {
-  0% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.92);
-  }
-}
-
-@keyframes chipStateEnter {
-  0% {
-    opacity: 0;
-    transform: translateY(6px) scale(0.88);
-    clip-path: inset(50% 50% 50% 50%);
-  }
-  35% {
-    opacity: 1;
-    transform: translateY(0) scale(1.03);
-    clip-path: inset(12% 12% 12% 12%);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    clip-path: inset(0 0 0 0);
-  }
-}
-
-/* 刻度条入场：每根刻度按序号升起 */
-@keyframes traceTickRise {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 数字逐位滚动入场 */
-@keyframes digitRoll {
-  from {
-    opacity: 0;
-    transform: translateY(0.5em);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 主题图标切换：旋转淡入 */
+/* 图标平滑翻转 */
 @keyframes iconSwap {
   from {
     opacity: 0;
-    transform: rotate(-90deg) scale(0.7);
+    transform: rotate(-75deg) scale(0.75);
   }
   to {
     opacity: 1;
@@ -408,35 +261,15 @@ body {
   }
 }
 
-/* 状态变更：导轨充能 + 边框闪色（一次性） */
-@keyframes railCharge {
-  from {
-    transform: translateY(-100%);
-  }
-  to {
-    transform: translateY(100%);
-  }
-}
-
-@keyframes stateFlash {
-  from {
-    border-color: rgb(var(--c-signal) / 0.8);
-  }
-}
-
-/* 指标读数变化：淡入上移（一次性） */
-@keyframes metricSwap {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-}
-
-/* 详情抽屉：面板滑入 + 遮罩淡入（一次性） */
+/* 抽屉弹簧滑入 */
 @keyframes drawerSlide {
   from {
     opacity: 0;
-    transform: translateX(24px);
+    transform: translate3d(36px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
   }
 }
 
@@ -444,97 +277,54 @@ body {
   from {
     opacity: 0;
   }
+  to {
+    opacity: 1;
+  }
 }
 
 @layer utilities {
   .animate-enter {
     opacity: 0;
-    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: springFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  .stagger-1 {
-    animation-delay: 0.05s;
-  }
-  .stagger-2 {
-    animation-delay: 0.1s;
-  }
-  .stagger-3 {
-    animation-delay: 0.15s;
-  }
-  .stagger-4 {
-    animation-delay: 0.2s;
-  }
-  .stagger-5 {
-    animation-delay: 0.25s;
+  .stagger-1 { animation-delay: 0.03s; }
+  .stagger-2 { animation-delay: 0.06s; }
+  .stagger-3 { animation-delay: 0.09s; }
+  .stagger-4 { animation-delay: 0.12s; }
+  .stagger-5 { animation-delay: 0.15s; }
+  .stagger-6 { animation-delay: 0.18s; }
+
+  .animate-radar {
+    animation: radarRipple 2.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
   }
 
-  .animate-trace {
-    animation: drawTrace 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  .animate-orb-1 {
+    animation: floatOrb1 18s ease-in-out infinite;
   }
 
-  .animate-traceTick {
-    animation: traceTickRise 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-    transform-box: fill-box;
+  .animate-orb-2 {
+    animation: floatOrb2 22s ease-in-out infinite;
   }
 
-  .animate-pulseRing {
-    animation: pulseRing 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  .animate-breathe {
-    animation: breathe 2s ease-in-out infinite;
-  }
-
-  .animate-scan {
-    animation: scanSweep 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .animate-orb-3 {
+    animation: floatOrb3 16s ease-in-out infinite;
   }
 
   .animate-iconSwap {
     animation: iconSwap 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
-  .rail-charge {
-    animation: railCharge 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  .state-flash {
-    animation: stateFlash 0.42s ease-out both;
-  }
-
-  .metric-swap {
-    display: inline-block;
-    animation: metricSwap 0.25s ease-out both;
-  }
-
   .drawer-slide {
-    animation: drawerSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: drawerSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .drawer-fade {
     animation: drawerFade 0.25s ease-out both;
   }
-
-  .chip-state-exit {
-    animation: chipStateExit 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
-  }
-
-  .chip-state-enter {
-    animation: chipStateEnter 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-
-  .rolling-digit {
-    display: inline-block;
-    animation: digitRoll 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
 }
 
-/* 刷新按钮加载态：由 data-pending 驱动图标旋转 */
-button[data-pending='true'] .refresh-icon {
-  animation: spin 1s linear infinite;
-}
-
-/* 尊重系统的「减少动态效果」设置 */
+/* 系统减弱动效回退 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -544,37 +334,11 @@ button[data-pending='true'] .refresh-icon {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-
-  .chip-state-exit {
-    display: none !important;
-  }
-
-  .chip-state-enter {
-    animation: none !important;
-    transform: none !important;
-    opacity: 1 !important;
-    clip-path: none !important;
-  }
-
-  button[data-pending='true'] .refresh-icon {
-    animation-name: none;
-  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .signal-halo::before {
-    animation: none !important;
-    transform: scale(1.6) !important;
-    opacity: 0.35 !important;
-  }
-
-  .signal-halo::after {
-    display: none !important;
-  }
-}
-
-/* 主题切换：View Transitions 交叉淡化时长（JS 侧已做减动效与降级判断） */
+/* 主题平滑过渡 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 0.2s;
+  animation-duration: 0.25s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }

@@ -1,31 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import type { MonitorView } from '@/lib/types';
 import { Sparkline } from './Sparkline';
 import { UptimeTrace } from './UptimeTrace';
 import { StatusDot } from './StatusDot';
-import { HudButton } from './HudButton';
 import { MonitorDetail } from './MonitorDetail';
 
-const RAIL: Record<MonitorView['state'], string> = {
-  up: 'bg-up',
-  down: 'bg-down',
-  paused: 'bg-line-strong',
-  pending: 'bg-degraded',
-};
-
 const STATE_META = {
-  up: { text: '正常' },
-  down: { text: '故障' },
-  paused: { text: '已暂停' },
-  pending: { text: '待检测' },
+  up: { text: '正常', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
+  down: { text: '故障', color: 'text-rose-500 bg-rose-500/10 border-rose-500/20' },
+  paused: { text: '已暂停', color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
+  pending: { text: '待检测', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
 } as const;
 
-type ChipState = {
-  prev: MonitorView['state'];
-  current: MonitorView['state'];
-  exiting: boolean;
+const RAIL_GLOW: Record<MonitorView['state'], string> = {
+  up: 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.7)]',
+  down: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]',
+  paused: 'bg-slate-400',
+  pending: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]',
 };
 
 function traceColorFor(state: MonitorView['state']): string {
@@ -40,163 +33,200 @@ interface Props {
 }
 
 export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) {
+  const cardRef = useRef<HTMLElement>(null);
+  const rafRef = useRef<number | null>(null);
   const meta = STATE_META[monitor.state];
   const live = monitor.state === 'down';
-  // SSL 到期倒计时：90 天为参考有效期（进度条宽度按此换算）
   const sslDays = monitor.sslExpires === null ? null : Math.ceil((monitor.sslExpires * 1000 - Date.now()) / 86400000);
-
-  const [chipAnim, setChipAnim] = useState<ChipState>({
-    prev: monitor.state,
-    current: monitor.state,
-    exiting: false,
-  });
   const [detailOpen, setDetailOpen] = useState(false);
 
-  if (monitor.state !== chipAnim.current) {
-    setChipAnim({
-      prev: chipAnim.current,
-      current: monitor.state,
-      exiting: true,
-    });
-  }
-
   useEffect(() => {
-    if (!chipAnim.exiting) return;
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
-    const timer = setTimeout(() => {
-      setChipAnim((prev) => ({ ...prev, exiting: false }));
-    }, 450); // 450ms 需覆盖 420ms 的导轨充能/边框闪色动画，避免动效被提前截断
+  // rAF 节流光标跟随，彻底消除高频鼠标移动时的布局抖动 (Forced Reflow)
+  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    if (rafRef.current !== null) return;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
 
-    return () => clearTimeout(timer);
-  }, [chipAnim.exiting, chipAnim.current]);
+    rafRef.current = requestAnimationFrame(() => {
+      const card = cardRef.current;
+      if (card) {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--card-x', `${clientX - rect.left}px`);
+        card.style.setProperty('--card-y', `${clientY - rect.top}px`);
+      }
+      rafRef.current = null;
+    });
+  };
 
   return (
     <article
-      className={`card relative py-3.5 pl-4 pr-4 transition-colors hover:border-line-strong ${
-        live ? 'border-down/45' : ''
-      } ${chipAnim.exiting && chipAnim.prev !== chipAnim.current ? 'state-flash' : ''}`}
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      className={`card group/card relative flex flex-col justify-between p-4.5 will-change-transform ${
+        live ? 'border-rose-500/50 shadow-glow-down' : ''
+      }`}
     >
-      {/* 左侧状态导轨：一眼扫过整列就能看出谁出了问题 */}
+      {/* 鼠标跟随微高光层 (Spotlight Hover Mask) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-200 group-hover/card:opacity-100"
+        style={{
+          background: `radial-gradient(360px circle at var(--card-x, 50%) var(--card-y, 50%), rgba(56, 189, 248, 0.08), transparent 70%)`,
+        }}
+      />
+
+      {/* 左侧垂直光导轨 (Glow Light Rail) */}
       <span
         aria-hidden
-        className={`absolute inset-y-0 left-0 w-[3px] overflow-hidden ${RAIL[monitor.state]}`}
-      >
-        {chipAnim.exiting && chipAnim.prev !== chipAnim.current && (
-          <span
-            key={`${chipAnim.prev}-${chipAnim.current}`}
-            aria-hidden
-            className="rail-charge absolute inset-0 bg-white/60"
-          />
-        )}
-      </span>
+        className={`absolute inset-y-3 left-0 w-1 rounded-r-full transition-all duration-300 ${RAIL_GLOW[monitor.state]}`}
+      />
 
-      {/* 标题行 */}
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            {live && <StatusDot tone="down" pulse />}
-            <h3 className="truncate text-[15px] font-semibold leading-snug">
-              {monitor.url ? (
-                <a
-                  href={monitor.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-block transition-[color,transform] hover:text-accent active:scale-[0.96]"
-                >
-                  {monitor.name}
-                </a>
-              ) : (
-                monitor.name
-              )}
-            </h3>
-            <span className="chip shrink-0 border-line text-subtle">{monitor.typeLabel}</span>
+      <div className="space-y-4 pl-1">
+        {/* 卡片头部：名称、类型标签、状态药丸、详情入口 */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <StatusDot tone={monitor.state} pulse={live} size="sm" />
+              <h3 className="truncate font-sans text-sm font-semibold tracking-tight text-ink">
+                {monitor.url ? (
+                  <a
+                    href={monitor.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="transition-colors hover:text-accent inline-flex items-center gap-1 group/title"
+                  >
+                    <span>{monitor.name}</span>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="opacity-0 -translate-x-1 group-hover/title:opacity-100 group-hover/title:translate-x-0 transition-all duration-200 text-accent"
+                    >
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  </a>
+                ) : (
+                  monitor.name
+                )}
+              </h3>
+              <span className="rounded-md border border-line/40 bg-surface2/50 px-1.5 py-0.5 font-mono text-[10px] text-subtle">
+                {monitor.typeLabel}
+              </span>
+            </div>
+
+            {showUrl && monitor.url && (
+              <p className="mt-1 truncate font-mono text-xs text-subtle" title={monitor.url}>
+                {monitor.url}
+              </p>
+            )}
           </div>
-          {showUrl && monitor.url && (
-            <p className="mt-1 truncate font-mono text-2xs text-subtle" title={monitor.url}>
-              {monitor.url}
-            </p>
-          )}
-        </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <HudButton
-            onClick={() => setDetailOpen(true)}
-            aria-label={`查看 ${monitor.name} 详情`}
-            className="h-7 px-2 font-mono text-2xs uppercase tracking-wider"
-          >
-            详情
-          </HudButton>
-          <span className="relative inline-flex shrink-0">
-          {chipAnim.exiting && chipAnim.prev !== chipAnim.current && (
-            <span
-              key={`exit-${chipAnim.prev}-${chipAnim.current}`}
-              aria-hidden
-              className="chip chip-state-exit pointer-events-none absolute left-0 top-0"
-              data-state={chipAnim.prev}
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setDetailOpen(true)}
+              aria-label={`查看 ${monitor.name} 详情`}
+              className="inline-flex h-6 items-center gap-1 rounded-full border border-line/40 bg-surface2/60 px-2 font-sans text-[11px] font-medium text-subtle transition-colors hover:border-line-strong hover:text-ink"
             >
-              {STATE_META[chipAnim.prev].text}
-            </span>
-          )}
-          <span
-            key={monitor.state}
-            className={`chip shrink-0 ${chipAnim.exiting ? 'chip-state-enter' : ''}`}
-            data-state={monitor.state}
-          >
-            {meta.text}
-          </span>
-          </span>
-        </div>
-      </div>
+              <span>详情</span>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
 
-      {/* 迹线 */}
-      <div className="mt-3.5">
-        <div className="mb-1.5 flex items-center justify-between font-mono text-2xs uppercase tracking-wider text-subtle">
-          <span>最近 {historyDays} 天</span>
-          <span className="tnum">{fmtRatio(monitor.uptime.all)}%</span>
-        </div>
-        <UptimeTrace days={monitor.days} timezone={timezone} height={48} />
-      </div>
-
-      {/* 指标：发丝分隔的等宽读数格 */}
-      <div className="mt-3.5 grid grid-cols-4 gap-px border border-line bg-line">
-        <Metric label="24h" value={fmtRatio(monitor.uptime.d1)} unit="%" />
-        <Metric label="7d" value={fmtRatio(monitor.uptime.d7)} unit="%" />
-        <Metric label="30d" value={fmtRatio(monitor.uptime.d30)} unit="%" />
-        <Metric
-          label="响应"
-          value={monitor.avgResponseMs !== null ? String(Math.round(monitor.avgResponseMs)) : '-'}
-          unit="ms"
-        />
-      </div>
-
-      {/* 响应时间 */}
-      <div className="mt-3.5">
-        <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 font-mono text-2xs uppercase tracking-wider text-subtle">
-          <span>响应时间</span>
-          <span className="tnum">
-            {monitor.lastResponseMs !== null ? `${Math.round(monitor.lastResponseMs)}ms` : '—'}
-          </span>
-        </div>
-        <Sparkline
-          values={monitor.responseSeries.map((p) => p.v)}
-          color={traceColorFor(monitor.state)}
-          height={32}
-        />
-      </div>
-
-      {sslDays !== null && (
-        <div className="mt-3.5">
-          <div className="mb-1.5 flex items-baseline justify-between font-mono text-2xs uppercase tracking-wider text-subtle">
-            <span>SSL 证书</span>
-            <span suppressHydrationWarning className={sslDays < 7 ? 'text-down' : sslDays < 14 ? 'text-degraded' : 'text-subtle'}>
-              {sslDays < 0 ? '已过期' : `${sslDays} 天后到期`}
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[11px] font-medium ${meta.color}`}
+            >
+              {meta.text}
             </span>
           </div>
-          <div className="h-[3px] bg-line">
-            <div className={`h-full ${sslDays < 7 ? 'bg-down' : sslDays < 14 ? 'bg-degraded' : 'bg-accent'}`} style={{ width: `${sslDays < 0 ? 100 : Math.min(100, Math.max(2, Math.round((sslDays / 90) * 100)))}%` }} />
-          </div>
         </div>
-      )}
+
+        {/* 90 天可用性微缩迹线 */}
+        <div>
+          <div className="mb-1.5 flex items-center justify-between font-mono text-xs text-subtle">
+            <span>最近 {historyDays} 天</span>
+            <span className="font-semibold text-ink">{fmtRatio(monitor.uptime.all)}%</span>
+          </div>
+          <UptimeTrace days={monitor.days} timezone={timezone} height={42} />
+        </div>
+
+        {/* 4 宫格遥测指标卡 */}
+        <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-line/40 bg-surface2/30 p-1.5">
+          <MetricCell label="24h" value={fmtRatio(monitor.uptime.d1)} unit="%" />
+          <MetricCell label="7d" value={fmtRatio(monitor.uptime.d7)} unit="%" />
+          <MetricCell label="30d" value={fmtRatio(monitor.uptime.d30)} unit="%" />
+          <MetricCell
+            label="平均延迟"
+            value={monitor.avgResponseMs !== null ? String(Math.round(monitor.avgResponseMs)) : '-'}
+            unit="ms"
+          />
+        </div>
+
+        {/* 响应时间趋势 (Smooth Sparkline) */}
+        <div>
+          <div className="mb-1.5 flex items-baseline justify-between font-mono text-xs text-subtle">
+            <span>响应延迟趋势</span>
+            <span className="font-medium text-ink">
+              {monitor.lastResponseMs !== null ? `${Math.round(monitor.lastResponseMs)}ms` : '—'}
+            </span>
+          </div>
+          <Sparkline
+            values={monitor.responseSeries.map((p) => p.v)}
+            color={traceColorFor(monitor.state)}
+            height={32}
+          />
+        </div>
+
+        {/* SSL 证书到期状态栏 */}
+        {sslDays !== null && (
+          <div className="border-t border-line/30 pt-2.5">
+            <div className="mb-1 flex items-center justify-between font-mono text-[11px] text-subtle">
+              <span className="flex items-center gap-1">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                SSL 证书安全
+              </span>
+              <span
+                suppressHydrationWarning
+                className={`font-medium ${
+                  sslDays < 7 ? 'text-rose-500' : sslDays < 15 ? 'text-amber-500' : 'text-emerald-500'
+                }`}
+              >
+                {sslDays < 0 ? '已到期' : `${sslDays} 天后更新`}
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-surface2">
+              <div
+                className={`h-full rounded-full transition-[width] duration-500 ease-out ${
+                  sslDays < 7
+                    ? 'bg-rose-500'
+                    : sslDays < 15
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500'
+                }`}
+                style={{
+                  width: `${sslDays < 0 ? 100 : Math.min(100, Math.max(4, Math.round((sslDays / 90) * 100)))}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       <MonitorDetail
         monitor={monitor}
@@ -208,13 +238,13 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
   );
 }
 
-function Metric({ label, value, unit }: { label: string; value: string; unit: string }) {
+function MetricCell({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div className="bg-surface px-2 py-1.5">
-      <div className="font-mono text-2xs uppercase tracking-wider text-subtle">{label}</div>
-      <div className="mt-0.5 font-mono text-xs font-semibold leading-none tnum">
-        <span key={value} className="metric-swap">{value}</span>
-        <span className="ml-0.5 text-2xs font-normal text-subtle">{unit}</span>
+    <div className="rounded-lg bg-surface/70 px-2 py-1 text-center backdrop-blur-sm">
+      <div className="font-mono text-[10px] text-subtle">{label}</div>
+      <div className="mt-0.5 font-mono text-xs font-semibold leading-none text-ink tnum">
+        {value}
+        <span className="ml-0.5 font-normal text-subtle text-[10px]">{unit}</span>
       </div>
     </div>
   );

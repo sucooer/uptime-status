@@ -1,7 +1,5 @@
 'use client';
 
-import { HudButton } from './HudButton';
-
 type AlertBannerProps = {
   downNames: string[];
 };
@@ -25,21 +23,37 @@ export function AlertBanner({ downNames }: AlertBannerProps) {
   };
 
   return (
-    <div className="card animate-enter mt-4 flex gap-3" role="alert">
-      <span aria-hidden className="w-[3px] shrink-0 bg-down" />
-      <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3.5 pr-4">
-        <div className="min-w-0">
-          <p className="eyebrow">当前故障 / OUTAGE</p>
-          <p className="mt-1 text-sm leading-relaxed text-ink2">
-            {downNames.length} 个服务不可用：{shown}
-          </p>
+    <div
+      role="alert"
+      className="animate-enter relative mt-6 overflow-hidden rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 backdrop-blur-xl shadow-glow-down transition-all"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose-500/20 text-rose-500">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            </svg>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-sans text-xs font-bold uppercase tracking-wider text-rose-500">
+                服务中断告警
+              </span>
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
+            </div>
+            <p className="mt-0.5 text-xs text-ink sm:text-sm">
+              检测到 <strong className="font-semibold text-rose-500">{downNames.length}</strong> 个服务异常：{shown}
+            </p>
+          </div>
         </div>
-        <HudButton
-          className="h-9 shrink-0 px-3 font-mono text-2xs uppercase tracking-wider"
+
+        <button
+          type="button"
           onClick={handleLocate}
+          className="rounded-full bg-rose-500 px-4 py-1.5 font-sans text-xs font-semibold text-white shadow-md shadow-rose-500/30 transition-all hover:bg-rose-600 hover:scale-105 active:scale-95"
         >
-          定位故障项
-        </HudButton>
+          定位故障服务
+        </button>
       </div>
     </div>
   );

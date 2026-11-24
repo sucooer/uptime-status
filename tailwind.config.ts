@@ -1,13 +1,5 @@
 import type { Config } from 'tailwindcss';
 
-/**
- * 设计令牌全部走 CSS 变量（定义在 globals.css），
- * 因此配色不需要 dark: 变体，主题切换只需换 :root / .dark 里的值。
- * 颜色用 rgb(var(--x) / <alpha-value>) 形式，保留 tailwind 的透明度语法（如 bg-up/20）。
- *
- * 动画统一由 globals.css 的 utilities 层提供，此处不再重复声明，
- * 避免同名 class 出现两套定义。
- */
 const config: Config = {
   darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}'],
@@ -18,7 +10,7 @@ const config: Config = {
         surface: 'rgb(var(--c-surface) / <alpha-value>)',
         surface2: 'rgb(var(--c-surface-2) / <alpha-value>)',
         ink: 'rgb(var(--c-ink) / <alpha-value>)',
-        ink2: 'rgb(var(--c-ink-2) / <alpha-value>)',
+        ink2: 'rgb(var(--c-ink2) / <alpha-value>)',
         subtle: 'rgb(var(--c-subtle) / <alpha-value>)',
         line: 'rgb(var(--c-line) / <alpha-value>)',
         'line-strong': 'rgb(var(--c-line-strong) / <alpha-value>)',
@@ -28,58 +20,58 @@ const config: Config = {
         accent: 'rgb(var(--c-accent) / <alpha-value>)',
         signal: 'rgb(var(--c-signal) / <alpha-value>)',
       },
-      /* 终端字体栈：拉丁字符与数字走等宽，中文回落到系统黑体。
-         这正是参考场景在中文环境下的实际渲染方式。 */
       fontFamily: {
         sans: [
-          'ui-monospace',
-          'SFMono-Regular',
-          'SF Mono',
-          'JetBrains Mono',
-          'Cascadia Mono',
-          'Menlo',
-          'Consolas',
-          'PingFang SC',
-          'Microsoft YaHei',
-          'Noto Sans SC',
-          'monospace',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          '"SF Pro Display"',
+          '"PingFang SC"',
+          '"Hiragino Sans GB"',
+          '"Microsoft YaHei"',
+          'sans-serif',
         ],
         mono: [
           'ui-monospace',
           'SFMono-Regular',
-          'SF Mono',
-          'JetBrains Mono',
-          'Cascadia Mono',
+          '"SF Mono"',
+          '"JetBrains Mono"',
           'Menlo',
           'Consolas',
-          'PingFang SC',
-          'Microsoft YaHei',
-          'Noto Sans SC',
           'monospace',
         ],
       },
-      /* 字号刻度：caption 11 / small 12 / body 13 / label 14 / title 28 / display 40 */
       fontSize: {
-        '2xs': ['0.6875rem', { lineHeight: '1.05rem' }],
+        '3xs': ['0.625rem', { lineHeight: '0.875rem' }],
+        '2xs': ['0.6875rem', { lineHeight: '1rem' }],
         xs: ['0.75rem', { lineHeight: '1.15rem' }],
-        sm: ['0.8125rem', { lineHeight: '1.5rem' }],
-        base: ['0.875rem', { lineHeight: '1.6rem' }],
-        title: ['1.75rem', { lineHeight: '1.2' }],
-        display: ['2.5rem', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
+        sm: ['0.8125rem', { lineHeight: '1.4rem' }],
+        base: ['0.875rem', { lineHeight: '1.5rem' }],
+        lg: ['1rem', { lineHeight: '1.5rem' }],
+        title: ['1.75rem', { lineHeight: '1.25' }],
+        display: ['2.5rem', { lineHeight: '1.1', letterSpacing: '-0.03em' }],
       },
-      /* 圆角刻意收小：面板是切角几何，控件是方角 */
       borderRadius: {
         none: '0',
-        sm: '1px',
-        DEFAULT: '2px',
-        md: '2px',
-        lg: '2px',
-        xl: '2px',
-        '2xl': '2px',
+        sm: '0.375rem',
+        DEFAULT: '0.5rem',
+        md: '0.625rem',
+        lg: '0.875rem',
+        xl: '1rem',
+        '2xl': '1.25rem',
+        '3xl': '1.5rem',
         full: '9999px',
       },
       letterSpacing: {
-        label: '0.14em',
+        label: '0.08em',
+      },
+      boxShadow: {
+        glass: '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
+        'glass-hover': '0 12px 40px 0 rgba(0, 0, 0, 0.35)',
+        'glow-accent': '0 0 24px -4px rgb(var(--c-accent) / 0.35)',
+        'glow-up': '0 0 24px -4px rgb(var(--c-up) / 0.4)',
+        'glow-down': '0 0 24px -4px rgb(var(--c-down) / 0.4)',
       },
     },
   },

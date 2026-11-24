@@ -21,15 +21,13 @@ function relative(ts: number): string {
 export function RefreshBar({ updatedAt, intervalMs }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
   const [justDone, setJustDone] = useState(false);
   const prevPendingRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
-    setReduceMotion(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
 
   useEffect(() => {
@@ -45,17 +43,15 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
     return () => clearInterval(id);
   }, [intervalMs, router]);
 
-  // 完成态：pending 由 true 变 false 后短暂显示「已刷新」
   useEffect(() => {
     if (pending) {
       setJustDone(false);
     } else if (prevPendingRef.current) {
       setJustDone(true);
-      const id = setTimeout(() => setJustDone(false), 900);
+      const id = setTimeout(() => setJustDone(false), 1200);
       prevPendingRef.current = pending;
       return () => clearTimeout(id);
     }
-
     prevPendingRef.current = pending;
   }, [pending]);
 
@@ -67,79 +63,118 @@ export function RefreshBar({ updatedAt, intervalMs }: Props) {
   const intervalSec = Math.max(1, Math.round(intervalMs / 1000));
   const progress = Math.min(1, Math.max(0, 1 - secondsToNext / intervalSec));
 
-  return (
-    <div className="flex items-center gap-2.5">
-      <span
-        suppressHydrationWarning
-        className="hidden items-center gap-1.5 font-mono text-2xs uppercase tracking-wider text-subtle sm:inline-flex tnum"
-      >
-        <span
-          aria-hidden
-          className={`h-1.5 w-1.5 shrink-0 animate-breathe rounded-full shadow-[0_0_8px_var(--tw-shadow-color)] ${pending ? 'bg-degraded shadow-degraded/60' : 'bg-signal shadow-signal/60'}`}
-        />
-        {mounted ? `更新于 ${age} · ${secondsToNext}s 后刷新` : '加载中…'}
-      </span>
+  // 环形进度参数
+  const r = 7;
+  const c = 2 * Math.PI * r;
+  const offset = c * (1 - progress);
 
+  return (
+    <div className="flex items-center gap-3">
+      {/* 状态文字与动态圆环 */}
+      <div
+        suppressHydrationWarning
+        className="hidden items-center gap-2.5 rounded-full border border-line/40 bg-surface/40 px-3 py-1.5 backdrop-blur-md font-mono text-xs text-subtle sm:inline-flex tnum"
+      >
+        <span className="relative flex h-2 w-2 items-center justify-center">
+          <span
+            className={`absolute h-full w-full rounded-full opacity-75 ${
+              pending ? 'animate-ping bg-degraded' : 'animate-pulse bg-signal'
+            }`}
+          />
+          <span
+            className={`relative h-1.5 w-1.5 rounded-full ${
+              pending ? 'bg-degraded' : 'bg-signal'
+            }`}
+          />
+        </span>
+        <span className="tracking-tight">
+          {mounted ? (
+            <>
+              更新于 <span className="text-ink font-medium">{age}</span>
+              <span className="mx-1 text-line-strong">·</span>
+              <span className="text-accent">{secondsToNext}s</span> 后同步
+            </>
+          ) : (
+            '连接中…'
+          )}
+        </span>
+      </div>
+
+      {/* 刷新按钮：带 SVG 环形进度条 */}
       <HudButton
         onClick={() => startTransition(() => router.refresh())}
         disabled={pending}
-        aria-label="立即刷新"
-        title="立即刷新"
+        aria-label="立即同步"
+        title="立即同步最新数据"
         suppressHydrationWarning
-        data-pending={pending}
-        className="relative h-11 gap-1.5 overflow-hidden px-2.5 font-mono text-2xs uppercase tracking-wider disabled:opacity-60"
+        className="group relative h-9 gap-2 rounded-full border-line/60 bg-surface/60 px-3.5 font-sans text-xs font-medium text-ink transition-all duration-300 hover:border-accent/50 hover:bg-surface/90 hover:shadow-glow-accent disabled:opacity-60"
       >
-        {/* 取数进行时的扫掠，给「正在诊断」一个可见的执行反馈 */}
-        {pending && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 w-full animate-scan bg-gradient-to-r from-transparent via-accent/25 to-transparent"
-          />
-        )}
-        {mounted && !pending && !reduceMotion && (
-          <span
-            aria-hidden
-            className="pointer-events-none absolute bottom-0 left-0 h-[2px] bg-signal transition-[width] duration-1000 ease-linear"
-            style={{ width: `${Math.round(progress * 100)}%` }}
-          />
-        )}
-        {justDone ? (
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="text-signal"
-          >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-        ) : (
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            className="refresh-icon"
-          >
-            <path d="M21 12a9 9 0 1 1-2.6-6.4" />
-            <path d="M21 3v6h-6" />
-          </svg>
-        )}
-        <span
-          aria-live="polite"
-          aria-atomic="true"
-          className={justDone ? 'text-signal' : undefined}
-        >
-          {justDone ? '已刷新' : pending ? '刷新中' : '刷新'}
+        {/* 微型环形进度或旋转箭头 */}
+        <span className="relative flex h-4 w-4 items-center justify-center">
+          {justDone ? (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-signal animate-enter"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <>
+              {/* 环形进度底圈与进度弧 */}
+              <svg className="h-4 w-4 -rotate-90 transform" viewBox="0 0 18 18">
+                <circle
+                  cx="9"
+                  cy="9"
+                  r={r}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-line/40"
+                />
+                <circle
+                  cx="9"
+                  cy="9"
+                  r={r}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeDasharray={c}
+                  strokeDashoffset={offset}
+                  strokeLinecap="round"
+                  className={`text-accent transition-[stroke-dashoffset] duration-1000 ease-linear ${
+                    pending ? 'animate-spin' : ''
+                  }`}
+                />
+              </svg>
+              {/* 内部微图标 */}
+              <svg
+                width="8"
+                height="8"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`absolute ${pending ? 'animate-spin text-accent' : 'text-subtle group-hover:text-ink'}`}
+              >
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              </svg>
+            </>
+          )}
+        </span>
+
+        <span className={`tracking-tight ${justDone ? 'text-signal' : ''}`}>
+          {justDone ? '已同步' : pending ? '同步中' : '同步'}
         </span>
       </HudButton>
-      <span hidden>{tick}</span>
     </div>
   );
 }

@@ -20,11 +20,14 @@ type Toast = {
   to: MonitorState;
 };
 
-const STATE_TEXT: Record<MonitorState, string> = {
-  up: '正常',
-  down: '故障',
-  paused: '已暂停',
-  pending: '待检测',
+const STATE_CONFIG: Record<
+  MonitorState,
+  { text: string; color: string; dot: string }
+> = {
+  up: { text: '已恢复正常', color: 'text-emerald-500', dot: 'bg-emerald-500' },
+  down: { text: '发生故障中断', color: 'text-rose-500', dot: 'bg-rose-500' },
+  paused: { text: '已暂停监测', color: 'text-slate-400', dot: 'bg-slate-400' },
+  pending: { text: '正在重新检测', color: 'text-amber-500', dot: 'bg-amber-400' },
 };
 
 export function StateToast({ snapshot }: StateToastProps) {
@@ -32,7 +35,6 @@ export function StateToast({ snapshot }: StateToastProps) {
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // 定时器只在卸载时清理：快照更新时清掉会让已出的 toast 永远不自动消失
   useEffect(
     () => () => {
       for (const timer of timersRef.current) {
@@ -69,9 +71,7 @@ export function StateToast({ snapshot }: StateToastProps) {
 
     prevRef.current = next;
 
-    if (changed.length === 0) {
-      return;
-    }
+    if (changed.length === 0) return;
 
     setToasts((current) => [...current, ...changed]);
 
@@ -79,7 +79,7 @@ export function StateToast({ snapshot }: StateToastProps) {
       timersRef.current.push(
         setTimeout(() => {
           setToasts((current) => current.filter((item) => item.key !== toast.key));
-        }, 4000),
+        }, 5000),
       );
     }
   }, [snapshot]);
@@ -91,34 +91,44 @@ export function StateToast({ snapshot }: StateToastProps) {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-[min(92vw,360px)] flex-col gap-2"
+      className="pointer-events-none fixed bottom-5 right-5 z-50 flex w-[min(92vw,380px)] flex-col gap-2.5"
     >
-      {toasts.map((toast) => (
-        <div
-          key={toast.key}
-          className="card animate-enter pointer-events-auto flex gap-3"
-          role={toast.to === 'down' ? 'alert' : undefined}
-        >
-          <span
-            aria-hidden
-            className={`w-[3px] shrink-0 ${toast.to === 'down' ? 'bg-down' : toast.to === 'up' ? 'bg-up' : 'bg-degraded'}`}
-          />
-          <div className="min-w-0 flex-1 py-3 pr-2">
-            <p className="eyebrow">状态变更 / STATUS</p>
-            <p className="mt-1 text-sm text-ink2">
-              {toast.name}：{STATE_TEXT[toast.from]} → {STATE_TEXT[toast.to]}
-            </p>
-          </div>
-          <button
-            type="button"
-            aria-label="关闭通知"
-            onClick={() => dismiss(toast.key)}
-            className="shrink-0 self-start px-2 py-3 font-mono text-sm text-subtle hover:text-ink"
+      {toasts.map((toast) => {
+        const conf = STATE_CONFIG[toast.to];
+        return (
+          <div
+            key={toast.key}
+            role={toast.to === 'down' ? 'alert' : 'status'}
+            className="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl border border-white/20 dark:border-white/10 bg-surface/90 p-4 shadow-2xl backdrop-blur-2xl animate-enter transition-all"
           >
-            ×
-          </button>
-        </div>
-      ))}
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="relative flex h-3 w-3 shrink-0 items-center justify-center">
+                <span className={`absolute h-full w-full rounded-full opacity-75 animate-ping ${conf.dot}`} />
+                <span className={`relative h-2 w-2 rounded-full ${conf.dot}`} />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-sans text-xs font-semibold text-ink">
+                  {toast.name}
+                </p>
+                <p className={`mt-0.5 font-sans text-xs ${conf.color}`}>
+                  {conf.text}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              aria-label="关闭通知"
+              onClick={() => dismiss(toast.key)}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-subtle transition-colors hover:bg-surface2 hover:text-ink"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

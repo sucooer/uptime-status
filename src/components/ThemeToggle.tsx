@@ -38,17 +38,37 @@ export function ThemeToggle() {
       aria-label="切换深浅主题"
       title="切换深浅主题"
       suppressHydrationWarning
-      className="h-11 w-11"
+      className="h-9 w-9 rounded-full border-line/60 bg-surface/60 p-0 text-ink2 transition-all duration-300 hover:border-accent/40 hover:bg-surface hover:text-ink hover:shadow-glow-accent"
     >
-      <span key={dark ? 'sun' : 'moon'} className="animate-iconSwap flex">
+      <span key={dark ? 'sun' : 'moon'} className="animate-iconSwap flex items-center justify-center">
         {mounted && dark ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]"
+          >
             <circle cx="12" cy="12" r="4" />
-            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
           </svg>
         ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-sky-500 drop-shadow-[0_0_8px_rgba(14,165,233,0.4)]"
+          >
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
           </svg>
         )}
       </span>

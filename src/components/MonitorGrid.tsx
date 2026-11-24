@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-
 import type { MonitorGroupView, MonitorState } from '@/lib/types';
 import { MonitorCard } from './MonitorCard';
 
@@ -14,12 +13,12 @@ interface Props {
 
 type Filter = 'all' | MonitorState;
 
-const FILTERS: ReadonlyArray<{ value: Filter; label: string }> = [
+const FILTERS: ReadonlyArray<{ value: Filter; label: string; dot?: string }> = [
   { value: 'all', label: '全部' },
-  { value: 'up', label: '正常' },
-  { value: 'down', label: '故障' },
-  { value: 'paused', label: '已暂停' },
-  { value: 'pending', label: '待检测' },
+  { value: 'up', label: '正常', dot: 'bg-emerald-500' },
+  { value: 'down', label: '故障', dot: 'bg-rose-500' },
+  { value: 'paused', label: '已暂停', dot: 'bg-slate-400' },
+  { value: 'pending', label: '待检测', dot: 'bg-amber-400' },
 ];
 
 export function MonitorGrid({ groups, timezone, showUrl, historyDays }: Props) {
@@ -37,40 +36,85 @@ export function MonitorGrid({ groups, timezone, showUrl, historyDays }: Props) {
     .filter(({ filtered }) => filtered.length > 0);
 
   return (
-    <div id="monitor-groups">
-      <div className="mt-10 flex flex-wrap items-center gap-2" role="group" aria-label="按状态筛选">
-        {FILTERS.map(({ value, label }) => {
-          const active = filter === value;
-          return (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={active}
-              onClick={() => setFilter(value)}
-              className={`chip ${active ? 'border-accent text-accent' : 'border-line text-subtle'}`}
-            >
-              {label} [{count(value)}]
-            </button>
-          );
-        })}
+    <div id="monitor-groups" className="mt-8 space-y-8">
+      {/* 现代流体胶囊筛选栏 (Liquid Pill Filter Bar) */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div
+          className="inline-flex items-center gap-1 rounded-full border border-line/60 bg-surface/60 p-1 shadow-sm backdrop-blur-xl"
+          role="group"
+          aria-label="按状态筛选"
+        >
+          {FILTERS.map(({ value, label, dot }) => {
+            const active = filter === value;
+            const c = count(value);
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setFilter(value)}
+                className={`relative flex items-center gap-1.5 rounded-full px-3 py-1.5 font-sans text-xs font-medium transition-all duration-300 ${
+                  active
+                    ? 'bg-accent text-white shadow-md shadow-accent/25'
+                    : 'text-subtle hover:bg-surface2/60 hover:text-ink'
+                }`}
+              >
+                {dot && (
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      active ? 'bg-white' : dot
+                    }`}
+                  />
+                )}
+                <span>{label}</span>
+                <span
+                  className={`ml-0.5 rounded-full px-1.5 py-0.2 font-mono text-[10px] leading-tight ${
+                    active ? 'bg-white/20 text-white' : 'bg-surface2 text-subtle'
+                  }`}
+                >
+                  {c}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="font-mono text-xs text-subtle">
+          共 <span className="font-semibold text-ink">{allMonitors.length}</span> 个监控端点
+        </div>
       </div>
 
       {visibleGroups.length === 0 ? (
-        <div className="card mt-10 px-4 py-6 text-center">
-          <p className="eyebrow">无匹配项</p>
-          <p className="mt-1.5 text-sm text-ink2">该状态下暂无监控项。</p>
+        <div className="card mt-8 flex flex-col items-center justify-center p-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface2 text-subtle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="m15 9-6 6M9 9l6 6" />
+            </svg>
+          </div>
+          <p className="mt-3 text-sm font-medium text-ink">当前筛选下无匹配项</p>
+          <p className="mt-1 text-xs text-subtle">暂未发现符合此状态过滤条件的监控目标。</p>
         </div>
       ) : (
         visibleGroups.map(({ group, filtered }) => (
-          <section key={group.name} className="mt-10">
-            <h3 className="mb-3 flex items-center gap-3">
-              <span className="eyebrow text-accent">{group.name}</span>
-              <span className="font-mono text-2xs tnum text-subtle">[{filtered.length}]</span>
-              <span aria-hidden className="rule flex-1" />
-            </h3>
-            <div className="grid gap-4 sm:grid-cols-2">
+          <section key={group.name} className="space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-2 font-sans text-sm font-semibold text-ink">
+                <span className="h-2 w-2 rounded-full bg-accent" />
+                {group.name}
+              </span>
+              <span className="rounded-full bg-surface2 px-2 py-0.5 font-mono text-xs text-subtle">
+                {filtered.length}
+              </span>
+              <div className="h-px flex-1 bg-gradient-to-r from-line/60 via-line/20 to-transparent" />
+            </div>
+
+            <div className="grid gap-4.5 sm:grid-cols-2">
               {filtered.map((m, idx) => (
-                <div key={m.id} className={`animate-enter ${idx < 5 ? `stagger-${idx + 1}` : ''}`}>
+                <div
+                  key={m.id}
+                  className={`animate-enter ${idx < 6 ? `stagger-${idx + 1}` : ''}`}
+                >
                   <MonitorCard
                     monitor={m}
                     timezone={timezone}
