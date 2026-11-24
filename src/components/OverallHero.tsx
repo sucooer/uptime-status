@@ -47,6 +47,7 @@ export function OverallHero({ overall, stats, days, historyDays, timezone }: Pro
   }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (typeof window !== 'undefined' && !window.matchMedia('(pointer: fine)').matches) return;
     if (rafRef.current !== null) return;
     const clientX = e.clientX;
     const clientY = e.clientY;

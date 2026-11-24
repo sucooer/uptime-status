@@ -103,7 +103,12 @@ export function UptimeTrace({ days, timezone, height = 48, inspectable = false }
       : 0;
 
   return (
-    <div ref={ref} className="group/trace relative select-none outline-none" {...inspectProps}>
+    <div
+      ref={ref}
+      className="group/trace relative select-none outline-none touch-pan-y"
+      style={{ touchAction: 'pan-y' }}
+      {...inspectProps}
+    >
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"

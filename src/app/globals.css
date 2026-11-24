@@ -4,8 +4,10 @@
 
 /* ---------------------------------------------------------------------------
    设计系统 2.0 —— Aero Aurora (极光琉璃 · 现代流体视觉系统)
-   全面拥抱现代高级感 + 纯净柔和的流体极光呼吸光晕
-   极致性能标准：GPU 硬件合成层加速，0 布局抖动，锁定 120 FPS
+   移动端与桌面端自适应双模渲染架构：
+   - 移动端：完全关闭高耗能的 backdrop-filter 避免 GPU 掉帧，采用高通透拟态色
+   - 桌面端：启用精致磨砂玻璃景深 + 光标微高光跟随
+   - 交互模式：严格按 (hover: hover) 隔离悬停态，杜绝触屏设备滚动“粘滞”
    --------------------------------------------------------------------------- */
 :root {
   color-scheme: light;
@@ -24,7 +26,7 @@
   --c-accent: 2 132 199;
   --c-signal: 16 185 129;
 
-  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-bg: rgba(255, 255, 255, 0.94);
   --glass-border: rgba(0, 0, 0, 0.06);
   --glass-specular: rgba(255, 255, 255, 0.9);
 }
@@ -46,7 +48,7 @@
   --c-accent: 56 189 248;
   --c-signal: 16 185 129;
 
-  --glass-bg: rgba(15, 23, 42, 0.72);
+  --glass-bg: rgba(15, 23, 42, 0.88);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-specular: rgba(255, 255, 255, 0.12);
 }
@@ -55,6 +57,7 @@ html {
   -webkit-text-size-adjust: 100%;
   background-color: rgb(var(--c-paper));
   scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -71,65 +74,96 @@ body {
   font-feature-settings: 'tnum' 1;
 }
 
+/* 隐藏横向滚动条但保留平滑滑动 */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 @layer components {
-  /* 现代磨砂玻璃卡片：优化模糊半径至 10px，明确指定 transition 属性，避免全属性重排 */
+  /* 基础磨砂玻璃卡片 */
   .card {
-    @apply relative overflow-hidden rounded-2xl border transition-[transform,box-shadow,border-color] duration-200 ease-out;
+    @apply relative overflow-hidden rounded-2xl border transition-[border-color,box-shadow,transform] duration-200 ease-out;
     background-color: var(--glass-bg);
     border-color: var(--glass-border);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.05),
-                inset 0 1px 0 0 var(--glass-specular);
+    box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  /* 仅在非移动端 (sm 以上桌面端) 启用 backdrop-filter，释放手机 GPU 压力 */
+  @media (min-width: 640px) {
+    .card {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.05),
+                  inset 0 1px 0 0 var(--glass-specular);
+    }
   }
 
   .dark .card {
-    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45),
-                inset 0 1px 0 0 var(--glass-specular);
+    box-shadow: 0 6px 20px -3px rgba(0, 0, 0, 0.45);
   }
 
-  .card:hover {
-    border-color: rgb(var(--c-accent) / 0.35);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.12),
-                inset 0 1px 0 0 var(--glass-specular),
-                0 0 16px -2px rgb(var(--c-accent) / 0.12);
+  @media (min-width: 640px) {
+    .dark .card {
+      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45),
+                  inset 0 1px 0 0 var(--glass-specular);
+    }
   }
 
-  .dark .card:hover {
-    box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.6),
-                inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
-                0 0 20px -2px rgb(var(--c-accent) / 0.15);
+  /* 悬停微动效：仅在具备精密光标的设备上触发，杜绝触屏滚动误触 */
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover {
+      border-color: rgb(var(--c-accent) / 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.12),
+                  inset 0 1px 0 0 var(--glass-specular),
+                  0 0 16px -2px rgb(var(--c-accent) / 0.15);
+    }
+
+    .dark .card:hover {
+      box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.6),
+                  inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+                  0 0 20px -2px rgb(var(--c-accent) / 0.18);
+    }
   }
 
   /* 核心看板悬浮晶体岛 */
   .hud-frame {
-    @apply relative overflow-hidden rounded-3xl border transition-[transform,box-shadow] duration-200 ease-out;
+    @apply relative overflow-hidden rounded-3xl border;
     background-color: var(--glass-bg);
     border-color: var(--glass-border);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.06),
-                inset 0 1px 0 0 var(--glass-specular);
   }
 
-  .dark .hud-frame {
-    box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 0 var(--glass-specular);
+  @media (min-width: 640px) {
+    .hud-frame {
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px -6px rgba(0, 0, 0, 0.06),
+                  inset 0 1px 0 0 var(--glass-specular);
+    }
+    .dark .hud-frame {
+      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5),
+                  inset 0 1px 0 0 var(--glass-specular);
+    }
   }
 
   /* 控件交互按钮 */
   .ctl {
-    @apply inline-flex items-center justify-center rounded-xl border transition-[transform,background-color,border-color,color] duration-150 ease-out;
-    background-color: rgb(var(--c-surface) / 0.65);
+    @apply inline-flex items-center justify-center rounded-xl border transition-colors duration-150;
+    background-color: rgb(var(--c-surface) / 0.8);
     border-color: var(--glass-border);
     color: rgb(var(--c-ink2));
   }
 
-  .ctl:hover {
-    @apply -translate-y-0.5 text-ink;
-    border-color: rgb(var(--c-line-strong));
-    background-color: rgb(var(--c-surface));
+  @media (hover: hover) and (pointer: fine) {
+    .ctl:hover {
+      @apply -translate-y-0.5 text-ink;
+      border-color: rgb(var(--c-line-strong));
+      background-color: rgb(var(--c-surface));
+    }
   }
 
   .ctl:active {
@@ -142,7 +176,7 @@ body {
 
   /* 状态指示胶囊 */
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-xs font-medium transition-[background-color,border-color,color] duration-150;
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-xs font-medium transition-colors duration-150;
   }
 
   .chip[data-state='up'] {
@@ -182,42 +216,42 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   极光与流体动效系统（完全运行在 GPU 合成层）
+   流体动效系统（完全由 GPU 合成层驱动）
    --------------------------------------------------------------------------- */
 
-/* 极光球平滑飘动动画 */
+/* 极光球缓动平移 */
 @keyframes floatOrb1 {
   0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translate3d(45px, 35px, 0) scale(1.08);
+    transform: translate3d(30px, 20px, 0);
   }
 }
 
 @keyframes floatOrb2 {
   0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translate3d(-40px, 25px, 0) scale(1.06);
+    transform: translate3d(-25px, 18px, 0);
   }
 }
 
 @keyframes floatOrb3 {
   0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
   50% {
-    transform: translate3d(30px, -40px, 0) scale(0.94);
+    transform: translate3d(20px, -25px, 0);
   }
 }
 
-/* 自然弹性升起 */
+/* 自然入场淡入 */
 @keyframes springFadeIn {
   from {
     opacity: 0;
-    transform: translate3d(0, 16px, 0);
+    transform: translate3d(0, 12px, 0);
   }
   to {
     opacity: 1;
@@ -261,11 +295,23 @@ body {
   }
 }
 
-/* 抽屉弹簧滑入 */
+/* 移动端底部抽屉上滑展开 */
+@keyframes sheetSlideUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 桌面端抽屉平滑自右滑入 */
 @keyframes drawerSlide {
   from {
     opacity: 0;
-    transform: translate3d(36px, 0, 0);
+    transform: translate3d(100%, 0, 0);
   }
   to {
     opacity: 1;
@@ -285,42 +331,42 @@ body {
 @layer utilities {
   .animate-enter {
     opacity: 0;
-    animation: springFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: springFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  .stagger-1 { animation-delay: 0.03s; }
-  .stagger-2 { animation-delay: 0.06s; }
-  .stagger-3 { animation-delay: 0.09s; }
-  .stagger-4 { animation-delay: 0.12s; }
-  .stagger-5 { animation-delay: 0.15s; }
-  .stagger-6 { animation-delay: 0.18s; }
+  .stagger-1 { animation-delay: 0.02s; }
+  .stagger-2 { animation-delay: 0.04s; }
+  .stagger-3 { animation-delay: 0.06s; }
+  .stagger-4 { animation-delay: 0.08s; }
+  .stagger-5 { animation-delay: 0.10s; }
+  .stagger-6 { animation-delay: 0.12s; }
 
   .animate-radar {
     animation: radarRipple 2.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
   }
 
   .animate-orb-1 {
-    animation: floatOrb1 18s ease-in-out infinite;
+    animation: floatOrb1 20s ease-in-out infinite;
   }
 
   .animate-orb-2 {
-    animation: floatOrb2 22s ease-in-out infinite;
+    animation: floatOrb2 24s ease-in-out infinite;
   }
 
   .animate-orb-3 {
-    animation: floatOrb3 16s ease-in-out infinite;
+    animation: floatOrb3 18s ease-in-out infinite;
   }
 
-  .animate-iconSwap {
-    animation: iconSwap 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  .animate-sheet-up {
+    animation: sheetSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .drawer-slide {
-    animation: drawerSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: drawerSlide 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   .drawer-fade {
-    animation: drawerFade 0.25s ease-out both;
+    animation: drawerFade 0.2s ease-out both;
   }
 }
 
@@ -334,11 +380,4 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-/* 主题平滑过渡 */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 0.25s;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }

@@ -15,8 +15,8 @@ const STATE_META = {
 } as const;
 
 const RAIL_GLOW: Record<MonitorView['state'], string> = {
-  up: 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.7)]',
-  down: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]',
+  up: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]',
+  down: 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.7)]',
   paused: 'bg-slate-400',
   pending: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]',
 };
@@ -46,8 +46,9 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
     };
   }, []);
 
-  // rAF 节流光标跟随，彻底消除高频鼠标移动时的布局抖动 (Forced Reflow)
+  // 仅在桌面端 (pointer: fine) 计算光标微跟随，移动端完全跳过
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    if (typeof window !== 'undefined' && !window.matchMedia('(pointer: fine)').matches) return;
     if (rafRef.current !== null) return;
     const clientX = e.clientX;
     const clientY = e.clientY;
@@ -67,32 +68,32 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
     <article
       ref={cardRef}
       onMouseMove={handleMouseMove}
-      className={`card group/card relative flex flex-col justify-between p-4.5 will-change-transform ${
+      className={`card group/card relative flex flex-col justify-between p-4 sm:p-5 ${
         live ? 'border-rose-500/50 shadow-glow-down' : ''
       }`}
     >
-      {/* 鼠标跟随微高光层 (Spotlight Hover Mask) */}
+      {/* 桌面端鼠标跟随微高光层 */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-200 group-hover/card:opacity-100"
+        className="pointer-events-none hidden sm:block absolute -inset-px rounded-2xl opacity-0 transition-opacity duration-200 group-hover/card:opacity-100"
         style={{
           background: `radial-gradient(360px circle at var(--card-x, 50%) var(--card-y, 50%), rgba(56, 189, 248, 0.08), transparent 70%)`,
         }}
       />
 
-      {/* 左侧垂直光导轨 (Glow Light Rail) */}
+      {/* 左侧垂直状态光导轨 */}
       <span
         aria-hidden
-        className={`absolute inset-y-3 left-0 w-1 rounded-r-full transition-all duration-300 ${RAIL_GLOW[monitor.state]}`}
+        className={`absolute inset-y-3 left-0 w-1 rounded-r-full transition-colors duration-300 ${RAIL_GLOW[monitor.state]}`}
       />
 
       <div className="space-y-4 pl-1">
         {/* 卡片头部：名称、类型标签、状态药丸、详情入口 */}
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2.5">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <StatusDot tone={monitor.state} pulse={live} size="sm" />
-              <h3 className="truncate font-sans text-sm font-semibold tracking-tight text-ink">
+              <h3 className="truncate font-sans text-sm sm:text-base font-bold tracking-tight text-ink">
                 {monitor.url ? (
                   <a
                     href={monitor.url}
@@ -121,33 +122,38 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
                   monitor.name
                 )}
               </h3>
-              <span className="rounded-md border border-line/40 bg-surface2/50 px-1.5 py-0.5 font-mono text-[10px] text-subtle">
+              <span className="shrink-0 rounded-md border border-line/40 bg-surface2/60 px-1.5 py-0.5 font-mono text-[10px] text-subtle">
                 {monitor.typeLabel}
               </span>
             </div>
 
             {showUrl && monitor.url && (
-              <p className="mt-1 truncate font-mono text-xs text-subtle" title={monitor.url}>
+              <p className="mt-0.5 truncate font-mono text-xs text-subtle" title={monitor.url}>
                 {monitor.url}
               </p>
             )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
+          {/* 详情按钮与状态标签：加大触控区域与 touch-manipulation */}
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => setDetailOpen(true)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDetailOpen(true);
+              }}
               aria-label={`查看 ${monitor.name} 详情`}
-              className="inline-flex h-6 items-center gap-1 rounded-full border border-line/40 bg-surface2/60 px-2 font-sans text-[11px] font-medium text-subtle transition-colors hover:border-line-strong hover:text-ink"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line/60 bg-surface2 px-3 py-1 font-sans text-xs font-semibold text-ink transition-all hover:border-line-strong active:scale-95 cursor-pointer touch-manipulation shadow-sm"
             >
               <span>详情</span>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="m9 18 6-6-6-6" />
               </svg>
             </button>
 
             <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-[11px] font-medium ${meta.color}`}
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 font-mono text-xs font-medium ${meta.color}`}
             >
               {meta.text}
             </span>
@@ -156,11 +162,11 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
 
         {/* 90 天可用性微缩迹线 */}
         <div>
-          <div className="mb-1.5 flex items-center justify-between font-mono text-xs text-subtle">
+          <div className="mb-1 flex items-center justify-between font-mono text-xs text-subtle">
             <span>最近 {historyDays} 天</span>
             <span className="font-semibold text-ink">{fmtRatio(monitor.uptime.all)}%</span>
           </div>
-          <UptimeTrace days={monitor.days} timezone={timezone} height={42} />
+          <UptimeTrace days={monitor.days} timezone={timezone} height={38} />
         </div>
 
         {/* 4 宫格遥测指标卡 */}
@@ -169,7 +175,7 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
           <MetricCell label="7d" value={fmtRatio(monitor.uptime.d7)} unit="%" />
           <MetricCell label="30d" value={fmtRatio(monitor.uptime.d30)} unit="%" />
           <MetricCell
-            label="平均延迟"
+            label="延迟"
             value={monitor.avgResponseMs !== null ? String(Math.round(monitor.avgResponseMs)) : '-'}
             unit="ms"
           />
@@ -177,8 +183,8 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
 
         {/* 响应时间趋势 (Smooth Sparkline) */}
         <div>
-          <div className="mb-1.5 flex items-baseline justify-between font-mono text-xs text-subtle">
-            <span>响应延迟趋势</span>
+          <div className="mb-1 flex items-baseline justify-between font-mono text-xs text-subtle">
+            <span>响应延迟走势</span>
             <span className="font-medium text-ink">
               {monitor.lastResponseMs !== null ? `${Math.round(monitor.lastResponseMs)}ms` : '—'}
             </span>
@@ -186,13 +192,13 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
           <Sparkline
             values={monitor.responseSeries.map((p) => p.v)}
             color={traceColorFor(monitor.state)}
-            height={32}
+            height={30}
           />
         </div>
 
         {/* SSL 证书到期状态栏 */}
         {sslDays !== null && (
-          <div className="border-t border-line/30 pt-2.5">
+          <div className="border-t border-line/30 pt-2">
             <div className="mb-1 flex items-center justify-between font-mono text-[11px] text-subtle">
               <span className="flex items-center gap-1">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -212,7 +218,7 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-surface2">
               <div
-                className={`h-full rounded-full transition-[width] duration-500 ease-out ${
+                className={`h-full rounded-full transition-[width] duration-300 ease-out ${
                   sslDays < 7
                     ? 'bg-rose-500'
                     : sslDays < 15
@@ -240,9 +246,9 @@ export function MonitorCard({ monitor, timezone, showUrl, historyDays }: Props) 
 
 function MetricCell({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div className="rounded-lg bg-surface/70 px-2 py-1 text-center backdrop-blur-sm">
+    <div className="rounded-lg bg-surface/75 px-1 sm:px-2 py-1 text-center">
       <div className="font-mono text-[10px] text-subtle">{label}</div>
-      <div className="mt-0.5 font-mono text-xs font-semibold leading-none text-ink tnum">
+      <div className="mt-0.5 font-mono text-xs font-semibold leading-none text-ink tnum truncate">
         {value}
         <span className="ml-0.5 font-normal text-subtle text-[10px]">{unit}</span>
       </div>
